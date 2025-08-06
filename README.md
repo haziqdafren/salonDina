@@ -234,4 +234,4 @@ Untuk pertanyaan dan dukungan:
 
 *"Sesungguhnya Allah itu indah dan menyukai keindahan"* - HR. Muslim
 
-© 2024 Salon Muslimah Dina - Kecantikan Islami untuk Wanita Muslimah
+© 2024 Salon Muslimah Dina - Kecantikan Islami untuk Wanita Muslimah# salonDina
