@@ -1,0 +1,293 @@
+// Comprehensive Prisma schema for Salon Muslimah Dina
+// Professional salon management system with therapist and bookkeeping
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Admin Management
+model Admin {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// Therapist Management System
+model Therapist {
+  id        String   @id @default(cuid())
+  initial   String   @unique  // R, A, E, T (inisial nama therapist)
+  fullName  String             // Nama lengkap therapist
+  phone     String?
+  joinDate  DateTime @default(now())
+  isActive  Boolean  @default(true)
+  
+  // Fee structure (flexible for future customization)
+  baseFeePerTreatment Int @default(15000)  // Default fee, can be customized
+  commissionRate      Float @default(0.1)  // 10% commission from service price
+  
+  // Performance tracking
+  totalTreatments Int @default(0)
+  totalEarnings   Int @default(0)
+  averageRating   Float?
+  
+  // Relations
+  dailyTreatments DailyTreatment[]
+  monthlyStats    TherapistMonthlyStats[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("therapists")
+}
+
+// Service Management
+model Service {
+  id          String  @id @default(cuid())
+  name        String
+  category    String
+  normalPrice Int
+  promoPrice  Int?
+  duration    Int     @default(60)  // Duration in minutes
+  description String?
+  isActive    Boolean @default(true)
+  popularity  Int     @default(0)   // Track how many times booked
+  
+  // Relations
+  dailyTreatments DailyTreatment[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("services")
+}
+
+// Enhanced Customer Management
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  email     String?
+  address   String?
+  notes     String?
+  
+  // Customer metrics
+  totalVisits    Int @default(0)
+  totalSpending  Int @default(0)
+  lastVisit      DateTime?
+  isVip          Boolean @default(false)
+  
+  // Relations
+  bookings        Booking[]
+  dailyTreatments DailyTreatment[]
+  feedback        CustomerFeedback[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customers")
+}
+
+// Booking System
+model Booking {
+  id         String   @id @default(cuid())
+  customerId String?
+  customerName String
+  phone      String
+  service    String
+  servicePrice Int
+  date       DateTime
+  time       String
+  status     String   @default("pending") // pending, confirmed, completed, cancelled
+  notes      String?
+  
+  // Relations
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("bookings")
+}
+
+// Daily Treatment Records (Core Business Logic)
+model DailyTreatment {
+  id           String   @id @default(cuid())
+  date         DateTime
+  customerId   String?
+  customerName String
+  serviceId    String
+  serviceName  String
+  servicePrice Int
+  therapistId  String
+  
+  // Payment details
+  tipAmount    Int      @default(0)
+  paymentMethod String  @default("cash") // cash, transfer, qris
+  
+  // Treatment details
+  startTime    String?
+  endTime      String?
+  notes        String?
+  
+  // Relations
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  service      Service   @relation(fields: [serviceId], references: [id])
+  therapist    Therapist @relation(fields: [therapistId], references: [id])
+  feedback     CustomerFeedback?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("daily_treatments")
+}
+
+// Customer Feedback System
+model CustomerFeedback {
+  id               String   @id @default(cuid())
+  dailyTreatmentId String   @unique
+  customerId       String?
+  
+  // Ratings (1-5 scale)
+  overallRating    Int      // Overall satisfaction
+  serviceQuality   Int      // Quality of treatment
+  therapistService Int      // Therapist performance
+  cleanliness      Int      // Salon cleanliness
+  valueForMoney    Int      // Price satisfaction
+  
+  // Feedback
+  comment          String?
+  wouldRecommend   Boolean  @default(true)
+  
+  // Relations
+  dailyTreatment   DailyTreatment @relation(fields: [dailyTreatmentId], references: [id])
+  customer         Customer? @relation(fields: [customerId], references: [id])
+  
+  createdAt        DateTime @default(now())
+
+  @@map("customer_feedback")
+}
+
+// Monthly Bookkeeping System
+model MonthlyBookkeeping {
+  id              String   @id @default(cuid())
+  date            DateTime @unique // Date for the entry (daily)
+  
+  // Daily financial data
+  dailyRevenue    Int      @default(0)  // Total omzet hari itu
+  
+  // Expenses Categories
+  operationalCost Int      @default(0)  // OP: listrik, air, produk, dll
+  salaryExpense   Int      @default(0)  // GAJI: gaji bulanan
+  therapistFee    Int      @default(0)  // FEE: fee harian therapist
+  otherExpenses   Int      @default(0)  // Pengeluaran lainnya
+  
+  // Calculations (auto-calculated)
+  totalExpense    Int      @default(0)  // Total pengeluaran
+  netIncome       Int      @default(0)  // Omzet - Total Expense
+  runningTotal    Int      @default(0)  // Omzet berjalan
+  
+  notes           String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("monthly_bookkeeping")
+}
+
+// Therapist Performance Analytics
+model TherapistMonthlyStats {
+  id          String   @id @default(cuid())
+  therapistId String
+  month       Int      // 1-12
+  year        Int
+  
+  // Monthly performance
+  treatmentCount Int @default(0)
+  totalRevenue   Int @default(0)  // Total revenue generated
+  totalFees      Int @default(0)  // Total fees earned
+  totalTips      Int @default(0)  // Total tips received
+  averageRating  Float?
+  
+  // Relations
+  therapist   Therapist @relation(fields: [therapistId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([therapistId, month, year])
+  @@map("therapist_monthly_stats")
+}
+
+// Business Settings
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string") // string, number, boolean, json
+  category  String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// Service Categories for better organization
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  icon        String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("service_categories")
+}
+
+// Business Hours Management
+model BusinessHour {
+  id        String   @id @default(cuid())
+  dayOfWeek Int      // 0 = Sunday, 1 = Monday, etc.
+  openTime  String   // e.g., "09:00"
+  closeTime String   // e.g., "17:00"
+  isOpen    Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dayOfWeek])
+  @@map("business_hours")
+}
+
+// Special Dates (holidays, promotions)
+model SpecialDate {
+  id          String      @id @default(cuid())
+  date        DateTime
+  type        SpecialType
+  title       String
+  description String?
+  isRecurring Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("special_dates")
+}
+
+enum SpecialType {
+  HOLIDAY // Hari libur
+  CLOSURE // Tutup khusus
+  PROMO   // Hari promo
+
+  @@map("special_type")
+}
