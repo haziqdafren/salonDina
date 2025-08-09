@@ -524,6 +524,34 @@ body {
   background: var(--salon-primary);
 }
 
+/* Ultra-Thin Scrollbar Styles for Modern UI */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thumb-salon-primary\/20::-webkit-scrollbar-thumb {
+  background-color: rgba(233, 30, 99, 0.2);
+  border-radius: 2px;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* Focus styles for accessibility */
 *:focus {
   outline: 2px solid var(--salon-primary);

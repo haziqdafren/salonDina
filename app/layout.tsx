@@ -1,45 +1,40 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Providers } from './providers'
+import { generateMedanMetaTags, generateLocalBusinessSchema } from '../lib/seo/medanSEO'
 import './globals.css'
 
+// Generate Medan-optimized SEO metadata
+const medanSEO = generateMedanMetaTags('home')
+
 export const metadata: Metadata = {
-  title: 'Salon Muslimah Dina - Kecantihan Islami untuk Wanita Muslimah',
-  description: 'Salon eksklusif khusus wanita muslimah di Medan dengan suasana privat, nyaman, dan sesuai syariat Islam. Perawatan kecantikan dengan sentuhan islami.',
-  keywords: [
-    'salon muslimah',
-    'salon wanita medan',
-    'perawatan islami',
-    'salon syariah',
-    'kecantikan halal',
-    'facial muslimah',
-    'henna medan',
-    'salon privat'
-  ],
+  title: medanSEO.title,
+  description: medanSEO.description,
+  keywords: medanSEO.keywords.split(', '),
   authors: [{ name: 'Salon Muslimah Dina' }],
   creator: 'Salon Muslimah Dina',
   publisher: 'Salon Muslimah Dina',
-  metadataBase: new URL('http://localhost:3000'),
+  metadataBase: new URL('https://salonmuslimah-medan.com'),
   openGraph: {
     type: 'website',
     locale: 'id_ID',
-    url: 'http://localhost:3000',
-    title: 'Salon Muslimah Dina - Kecantikan Islami untuk Wanita Muslimah',
-    description: 'Salon eksklusif khusus wanita muslimah di Medan dengan suasana privat dan sesuai syariat Islam.',
+    url: medanSEO.ogUrl,
+    title: medanSEO.ogTitle,
+    description: medanSEO.ogDescription,
     siteName: 'Salon Muslimah Dina',
     images: [
       {
-        url: '/og-image.jpg',
+        url: medanSEO.ogImage,
         width: 1200,
         height: 630,
-        alt: 'Salon Muslimah Dina',
+        alt: 'Salon Muslimah Dina Medan - Buka Setiap Hari',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Salon Muslimah Dina - Kecantikan Islami',
-    description: 'Salon eksklusif khusus wanita muslimah di Medan',
-    images: ['/twitter-image.jpg'],
+    title: medanSEO.twitterTitle,
+    description: medanSEO.twitterDescription,
+    images: [medanSEO.twitterImage],
   },
   robots: {
     index: true,
@@ -58,6 +53,19 @@ export const metadata: Metadata = {
     shortcut: '/favicon-16x16.png',
     apple: '/apple-touch-icon.png',
   },
+  other: {
+    'geo.region': medanSEO.geoRegion,
+    'geo.placename': medanSEO.geoPlacename,
+    'geo.position': medanSEO.geoPosition,
+    'ICBM': medanSEO.icbm,
+  }
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 }
 
 export default function RootLayout({
@@ -82,50 +90,21 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#E8B4B8" />
         <meta name="msapplication-tap-highlight" content="no" />
         
-        {/* Islamic and Indonesian cultural meta tags */}
+        {/* Medan-specific meta tags */}
         <meta name="google-site-verification" content="your-verification-code" />
-        <meta property="business:contact_data:locality" content="Medan" />
+        <meta property="business:contact_data:locality" content="Medan Selayang" />
         <meta property="business:contact_data:region" content="Sumatera Utara" />
         <meta property="business:contact_data:country_name" content="Indonesia" />
+        <meta name="geo.region" content="ID-SU" />
+        <meta name="geo.placename" content="Medan, Sumatera Utara" />
+        <meta name="geo.position" content="3.5952;98.6722" />
+        <meta name="ICBM" content="3.5952, 98.6722" />
         
-        {/* Structured data for business */}
+        {/* Medan Local Business Structured Data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'BeautySalon',
-              name: 'Salon Muslimah Dina',
-              description: 'Salon eksklusif khusus wanita muslimah di Medan dengan suasana privat dan sesuai syariat Islam',
-              url: 'http://localhost:3000',
-              telephone: '+62-812-3456-7890',
-              address: {
-                '@type': 'PostalAddress',
-                streetAddress: 'Jl. Masjid No. 123',
-                addressLocality: 'Medan',
-                addressRegion: 'Sumatera Utara',
-                postalCode: '20154',
-                addressCountry: 'ID',
-              },
-              geo: {
-                '@type': 'GeoCoordinates',
-                latitude: 3.5952,
-                longitude: 98.6722,
-              },
-              openingHours: [
-                'Mo-Sa 09:00-17:00',
-                'Su 10:00-15:00',
-              ],
-              priceRange: 'Rp 75,000 - Rp 1,500,000',
-              image: [
-                'http://localhost:3000/salon-image-1.jpg',
-                'http://localhost:3000/salon-image-2.jpg',
-              ],
-              sameAs: [
-                'https://instagram.com/dina_salon_muslimah',
-                'https://wa.me/6281234567890',
-              ],
-            }),
+            __html: JSON.stringify(generateLocalBusinessSchema()),
           }}
         />
       </head>

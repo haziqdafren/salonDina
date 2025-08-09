@@ -1,9 +1,11 @@
-// Sophisticated WhatsApp Booking System - Logo-integrated design
+// Ultra-Professional Interactive Booking System for Medan
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { treatmentCategories, formatRupiah, calculateTotalDuration, calculateTotalPrice } from '../../data/treatments'
+import { getCurrentBusinessStatus, getAvailableSlots, isWithinPrayerTime, SALON_BUSINESS_HOURS } from '../../lib/utils/businessHours'
+import IndonesianPaymentMethods from '../payment/IndonesianPaymentMethods'
 
 interface Treatment {
   id: number
@@ -27,6 +29,9 @@ interface CustomerInfo {
 const BookingSystem = () => {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedServices, setSelectedServices] = useState<Treatment[]>([])
+  const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
     phone: '',
@@ -37,6 +42,49 @@ const BookingSystem = () => {
   const [totalPrice, setTotalPrice] = useState(0)
   const [totalDuration, setTotalDuration] = useState(0)
   const [showConfirmation, setShowConfirmation] = useState(false)
+
+  // Create flattened treatments array with category info
+  const allTreatments = useMemo(() => {
+    const treatments: Treatment[] = []
+    Object.entries(treatmentCategories).forEach(([categoryKey, category]) => {
+      category.items.forEach(item => {
+        treatments.push({
+          ...item,
+          category: categoryKey,
+          categoryIcon: category.icon
+        })
+      })
+    })
+    return treatments
+  }, [])
+
+  // Filter treatments based on search and category
+  const filteredTreatments = useMemo(() => {
+    let filtered = allTreatments
+
+    if (activeCategory !== 'all') {
+      filtered = filtered.filter(treatment => treatment.category === activeCategory)
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter(treatment =>
+        treatment.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    return filtered.sort((a, b) => b.popularity - a.popularity)
+  }, [allTreatments, activeCategory, searchTerm])
+
+  // Category tabs data
+  const categoryTabs = [
+    { key: 'all', title: 'Semua', icon: '✨', count: allTreatments.length },
+    ...Object.entries(treatmentCategories).map(([key, category]) => ({
+      key,
+      title: category.title,
+      icon: category.icon,
+      count: category.items.length
+    }))
+  ]
 
   // Calculate totals whenever services change
   useEffect(() => {
@@ -89,22 +137,70 @@ Wassalamu'alaikum`;
     return encodeURIComponent(message);
   };
 
-  const handleWhatsAppBooking = () => {
+  const handleWhatsAppBooking = async () => {
+    try {
+      // FIRST: Save booking to database before WhatsApp redirect
+      const bookingData = {
+        customerName: customerInfo.name,
+        phone: customerInfo.phone.replace(/^0/, '+62'), // Convert to international format
+        service: selectedServices.map(s => s.name).join(', '),
+        servicePrice: totalPrice,
+        date: customerInfo.date,
+        time: customerInfo.time.replace(' 🕌', ''), // Clean up prayer time indicator
+        status: 'pending',
+        notes: `${customerInfo.notes || 'Tidak ada catatan khusus'}\n\nLayanan detail:\n${selectedServices.map(s => `• ${s.name} - ${formatRupiah(s.hargaPromo || s.hargaNormal)} (${s.duration}m)`).join('\n')}\n\nTotal Estimasi: ${formatRupiah(totalPrice)}\nEstimasi Durasi: ${Math.ceil(totalDuration / 60)} jam ${totalDuration % 60} menit`
+      };
+
+      // Save to database
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Booking saved to database:', result);
+      } else {
+        console.warn('⚠️ Failed to save booking to database, but continuing to WhatsApp');
+      }
+    } catch (error) {
+      console.error('❌ Error saving booking:', error);
+      // Continue to WhatsApp even if database save fails
+    }
+
+    // THEN: Open WhatsApp for confirmation
     const message = generateWhatsAppMessage();
     const whatsappUrl = `https://wa.me/6281234567890?text=${message}`;
     window.open(whatsappUrl, '_blank');
     setShowConfirmation(true);
   };
 
-  const availableTimeSlots = [
-    '09:00', '10:00', '11:00', '12:00', 
-    '14:00', '15:00', '16:00', '17:00'
-  ];
+  // Generate available time slots using business hours utility
+  const availableTimeSlots = useMemo(() => {
+    // Generate 30-minute slots from 09:00 to 18:00
+    const slots = []
+    for (let hour = 9; hour < 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+        
+        // Mark prayer time flexibility
+        if ((hour === 12 && minute >= 25 && minute <= 55) || 
+            (hour === 15 && minute >= 46) || (hour === 16 && minute <= 16)) {
+          slots.push(`${timeString} 🕌`) // Prayer flexible time
+        } else {
+          slots.push(timeString)
+        }
+      }
+    }
+    return slots
+  }, []);
 
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   };
 
   return (
@@ -173,150 +269,152 @@ Wassalamu'alaikum`;
 
         {/* Step Content */}
         <AnimatePresence mode="wait">
-          {/* Step 1: Service Selection */}
+          {/* Step 1: Ultra-Professional Service Selection */}
           {currentStep === 1 && (
             <motion.div
               key="step1"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="space-y-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
             >
+              {/* Header */}
               <div className="text-center mb-8">
-                <h3 className="salon-header text-2xl mb-2">
-                  Pilih Treatment Favorit Anda
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-salon-primary to-salon-secondary bg-clip-text text-transparent mb-3">
+                  Pilih Treatment Favorit
                 </h3>
-                <p style={{ color: 'var(--salon-charcoal)' }}>
-                  Anda bisa memilih lebih dari satu treatment
-                </p>
+                <p className="text-slate-600 text-lg">Temukan layanan terbaik untuk kecantikan Anda</p>
               </div>
 
-              {Object.entries(treatmentCategories).map(([key, category]) => (
-                <motion.div
-                  key={key}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="salon-card p-6 corner-ornament"
-                >
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="text-3xl">{category.icon}</div>
-                    <div>
-                      <h4 className="salon-header text-xl mb-1">{category.title}</h4>
-                      <p style={{ color: 'var(--salon-charcoal)', opacity: 0.7 }} className="text-sm">
-                        {category.description}
-                      </p>
-                    </div>
-                  </div>
+              {/* Search Bar - Ultra Thin */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative max-w-md mx-auto mb-8"
+              >
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400">
+                  🔍
+                </div>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Cari treatment..."
+                  className="w-full pl-12 pr-4 py-4 bg-white/80 backdrop-blur-sm border border-slate-200/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-salon-primary/30 focus:border-salon-primary transition-all duration-300 text-slate-700 placeholder-slate-400"
+                />
+              </motion.div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {category.items.map((service) => (
-                      <motion.div
-                        key={service.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleServiceToggle(service)}
-                        className={`p-4 cursor-pointer transition-all duration-300 ${
-                          selectedServices.find(s => s.id === service.id)
-                            ? 'bg-gradient-to-r from-salon-primary to-salon-secondary text-white shadow-lg'
-                            : 'bg-salon-soft-pink hover:bg-salon-warm-pink'
-                        }`}
-                        style={{ 
-                          borderRadius: '20px 5px 20px 5px',
-                          minHeight: '120px',
-                          color: selectedServices.find(s => s.id === service.id) ? 'white' : 'var(--salon-charcoal)'
-                        }}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h5 className="font-semibold text-sm leading-tight flex-1">
-                            {service.name}
-                          </h5>
-                          {service.hargaPromo && (
-                            <span className="bg-salon-gold text-salon-charcoal text-xs px-2 py-1 rounded-full font-bold ml-2">
-                              PROMO
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="text-sm mb-2">
-                          {service.hargaPromo ? (
-                            <div>
-                              <span className="font-bold text-base">
-                                {formatRupiah(service.hargaPromo)}
-                              </span>
-                              <span className={`ml-2 line-through text-xs ${
-                                selectedServices.find(s => s.id === service.id) ? 'text-white/70' : 'opacity-60'
-                              }`}>
-                                {formatRupiah(service.hargaNormal)}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="font-bold text-base">
-                              {formatRupiah(service.hargaNormal)}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className={`text-xs ${
-                          selectedServices.find(s => s.id === service.id) ? 'text-white/80' : 'opacity-60'
-                        }`}>
-                          ⏱️ ~{service.duration} menit • ⭐ {service.popularity}/10
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
+              {/* Category Tabs - Ultra Thin */}
+              <div className="flex overflow-x-auto scrollbar-hide gap-2 pb-2 mb-6">
+                {categoryTabs.map((tab, index) => (
+                  <motion.button
+                    key={tab.key}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    onClick={() => setActiveCategory(tab.key)}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full whitespace-nowrap transition-all duration-300 ${
+                      activeCategory === tab.key
+                        ? 'bg-gradient-to-r from-salon-primary to-salon-secondary text-white shadow-lg'
+                        : 'bg-white/70 hover:bg-white text-slate-600 hover:shadow-md border border-slate-200/50'
+                    }`}
+                  >
+                    <span className="text-lg">{tab.icon}</span>
+                    <span className="font-semibold">{tab.title}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      activeCategory === tab.key
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  </motion.button>
+                ))}
+              </div>
 
-              {/* Selected Services Summary */}
-              {selectedServices.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="salon-card p-6"
-                >
-                  <h4 className="salon-header text-xl mb-4">
-                    Treatment yang Dipilih ({selectedServices.length})
-                  </h4>
-                  
-                  <div className="space-y-3 mb-6">
-                    {selectedServices.map((service) => (
-                      <div key={service.id} className="flex justify-between items-center p-3 bg-salon-soft-pink rounded-xl">
-                        <span className="font-medium">{service.name}</span>
-                        <span className="font-bold text-salon-primary">
-                          {formatRupiah(service.hargaPromo || service.hargaNormal)}
-                        </span>
+              {/* Treatment Grid - Mobile Optimized */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-salon-primary/20 scrollbar-track-transparent">
+                {filteredTreatments.map((treatment, index) => (
+                  <motion.div
+                    key={treatment.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => setSelectedTreatment(treatment)}
+                    className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/50 hover:border-salon-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden"
+                  >
+                    {/* Popular Badge */}
+                    {treatment.popularity >= 8 && (
+                      <div className="absolute top-3 right-3">
+                        <div className="bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                          POPULER
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  
-                  <div className="border-t border-salon-accent/30 pt-4 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Estimasi Durasi:</span>
-                      <span className="font-bold text-salon-secondary">
-                        {Math.ceil(totalDuration / 60)} jam {totalDuration % 60} menit
-                      </span>
+                    )}
+
+                    {/* Promo Badge */}
+                    {treatment.hargaPromo && (
+                      <div className="absolute top-3 left-3">
+                        <div className="bg-gradient-to-r from-green-400 to-green-600 text-white text-xs px-2 py-1 rounded-full font-bold">
+                          PROMO
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-center">
+                      <div className="text-3xl mb-3">{treatment.categoryIcon}</div>
+                      <h4 className="font-bold text-slate-800 mb-2 group-hover:text-salon-primary transition-colors">
+                        {treatment.name}
+                      </h4>
+                      
+                      <div className="mb-3">
+                        {treatment.hargaPromo ? (
+                          <div className="space-y-1">
+                            <div className="text-xl font-bold text-green-600">
+                              {formatRupiah(treatment.hargaPromo)}
+                            </div>
+                            <div className="text-sm text-slate-400 line-through">
+                              {formatRupiah(treatment.hargaNormal)}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xl font-bold text-slate-700">
+                            {formatRupiah(treatment.hargaNormal)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-center gap-4 text-sm text-slate-500 mb-4">
+                        <span>⏱️ {treatment.duration}m</span>
+                        <span>⭐ {treatment.popularity}/10</span>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleServiceToggle(treatment)
+                        }}
+                        className={`w-full py-3 min-h-[44px] rounded-xl font-semibold transition-all duration-300 touch-manipulation ${
+                          selectedServices.find(s => s.id === treatment.id)
+                            ? 'bg-gradient-to-r from-salon-primary to-salon-secondary text-white'
+                            : 'bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700'
+                        }`}
+                      >
+                        {selectedServices.find(s => s.id === treatment.id) ? '✓ Dipilih' : '+ Pilih'}
+                      </button>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold">Total Estimasi:</span>
-                      <span className="text-2xl font-bold bg-gradient-to-r from-salon-primary to-salon-secondary bg-clip-text text-transparent">
-                        {formatRupiah(totalPrice)}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {filteredTreatments.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🔍</div>
+                  <h3 className="text-xl font-bold text-slate-600 mb-2">Treatment tidak ditemukan</h3>
+                  <p className="text-slate-500">Coba ubah kata kunci pencarian atau kategori</p>
+                </div>
               )}
 
-              <div className="text-center">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setCurrentStep(2)}
-                  disabled={selectedServices.length === 0}
-                  className="salon-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Lanjut ke Jadwal ({selectedServices.length} treatment)
-                </motion.button>
-              </div>
             </motion.div>
           )}
 
@@ -349,16 +447,25 @@ Wassalamu'alaikum`;
                     <input
                       type="date"
                       value={customerInfo.date}
-                      min={getTomorrowDate()}
+                      min={getTodayDate()}
                       onChange={(e) => setCustomerInfo({...customerInfo, date: e.target.value})}
                       className="salon-input"
                     />
                     
-                    {/* Special Notes */}
-                    <div className="mt-4 p-4 bg-salon-soft-pink rounded-xl">
-                      <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--salon-charcoal)', opacity: 0.8 }}>
-                        <span>🕌</span>
-                        <span className="font-medium">Catatan: Salon tutup setiap hari Jumat 12:00-13:30 untuk sholat Jumat</span>
+                    {/* Business Hours Info */}
+                    <div className="mt-4 p-4 bg-gradient-to-r from-salon-primary/10 to-salon-secondary/10 rounded-xl">
+                      <div className="space-y-2 text-sm" style={{ color: 'var(--salon-charcoal)', opacity: 0.9 }}>
+                        <div className="flex items-center gap-2 font-semibold text-salon-primary">
+                          <span>🕐</span>
+                          <span>BUKA SETIAP HARI: 09:00 - 18:30 WIB</span>
+                        </div>
+                        <div className="text-xs text-salon-secondary">
+                          ⭐ Satu-satunya salon muslimah di Medan yang buka 7 hari seminggu!
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-salon-islamic">
+                          <span>🕌</span>
+                          <span>*Fleksibel menyesuaikan waktu sholat</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -368,21 +475,22 @@ Wassalamu'alaikum`;
                     <label className="block text-lg font-semibold text-salon-secondary mb-4">
                       ⏰ Pilih Waktu
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {availableTimeSlots.map((time) => (
                         <motion.button
                           key={time}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => setCustomerInfo({...customerInfo, time})}
-                          className={`p-3 font-medium transition-all duration-300 ${
+                          className={`p-4 min-h-[48px] font-medium transition-all duration-300 text-center touch-manipulation ${
                             customerInfo.time === time
                               ? 'bg-gradient-to-r from-salon-primary to-salon-secondary text-white shadow-lg'
-                              : 'bg-salon-soft-pink hover:bg-salon-warm-pink'
+                              : 'bg-salon-soft-pink hover:bg-salon-warm-pink active:bg-salon-warm-pink'
                           }`}
                           style={{ 
                             borderRadius: '15px 5px 15px 5px',
-                            color: customerInfo.time === time ? 'white' : 'var(--salon-charcoal)'
+                            color: customerInfo.time === time ? 'white' : 'var(--salon-charcoal)',
+                            minHeight: '48px' // Ensure 48px minimum touch target
                           }}
                         >
                           {time}
@@ -390,18 +498,21 @@ Wassalamu'alaikum`;
                       ))}
                     </div>
                     
-                    {/* Prayer Time Info */}
-                    <div className="mt-4 p-4 bg-salon-soft-pink rounded-xl">
+                    {/* Prayer Time Info - Medan Specific */}
+                    <div className="mt-4 p-4 bg-salon-islamic/10 rounded-xl">
                       <div className="text-sm" style={{ color: 'var(--salon-charcoal)', opacity: 0.8 }}>
                         <div className="flex items-center gap-2 mb-2">
-                          <span>🤲</span>
-                          <span className="font-medium">Waktu Sholat Medan Hari Ini:</span>
+                          <span>🕌</span>
+                          <span className="font-medium text-salon-islamic">Waktu Sholat Medan:</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <span>• Dzuhur: 12:20</span>
-                          <span>• Ashar: 15:35</span>
-                          <span>• Maghrib: 18:15</span>
-                          <span>• Isya: 19:30</span>
+                          <span>• Subuh: 05:00</span>
+                          <span>• Dzuhur: 12:25</span>
+                          <span>• Ashar: 15:46</span>
+                          <span>• Maghrib: 18:32</span>
+                        </div>
+                        <div className="mt-2 text-xs text-salon-accent">
+                          💡 Tip: Pilih waktu sebelum Maghrib untuk treatment yang lebih panjang
                         </div>
                       </div>
                     </div>
@@ -600,6 +711,142 @@ Wassalamu'alaikum`;
                   💬 Booking via WhatsApp
                 </motion.button>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Floating Selected Services Summary */}
+        <AnimatePresence>
+          {selectedServices.length > 0 && currentStep === 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              className="fixed bottom-6 left-6 right-6 z-40"
+            >
+              <div className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-slate-200/50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-slate-800 mb-1">
+                      {selectedServices.length} Treatment Dipilih
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      {Math.ceil(totalDuration / 60)}j {totalDuration % 60}m • {formatRupiah(totalPrice)}
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setCurrentStep(2)}
+                    className="bg-gradient-to-r from-salon-primary to-salon-secondary text-white px-6 py-3 rounded-xl font-semibold shadow-lg"
+                  >
+                    Lanjutkan →
+                  </motion.button>
+                </div>
+                
+                {/* Quick selected items list */}
+                <div className="flex gap-2 mt-3 overflow-x-auto">
+                  {selectedServices.map((service) => (
+                    <div
+                      key={service.id}
+                      className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1 whitespace-nowrap"
+                    >
+                      <span className="text-sm font-medium">{service.name}</span>
+                      <button
+                        onClick={() => handleServiceToggle(service)}
+                        className="text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Treatment Detail Modal */}
+        <AnimatePresence>
+          {selectedTreatment && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setSelectedTreatment(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
+              >
+                <div className="text-center mb-6">
+                  <div className="text-5xl mb-4">{selectedTreatment.categoryIcon}</div>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-2">
+                    {selectedTreatment.name}
+                  </h3>
+                  
+                  <div className="mb-4">
+                    {selectedTreatment.hargaPromo ? (
+                      <div className="space-y-2">
+                        <div className="text-3xl font-bold text-green-600">
+                          {formatRupiah(selectedTreatment.hargaPromo)}
+                        </div>
+                        <div className="text-lg text-slate-400 line-through">
+                          {formatRupiah(selectedTreatment.hargaNormal)}
+                        </div>
+                        <div className="inline-block bg-green-500 text-white text-sm px-3 py-1 rounded-full font-bold">
+                          HEMAT {formatRupiah(selectedTreatment.hargaNormal - selectedTreatment.hargaPromo)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-3xl font-bold text-slate-700">
+                        {formatRupiah(selectedTreatment.hargaNormal)}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center justify-center gap-6 text-slate-600 mb-6">
+                    <div className="text-center">
+                      <div className="text-2xl">⏱️</div>
+                      <div className="text-sm font-semibold">{selectedTreatment.duration} menit</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl">⭐</div>
+                      <div className="text-sm font-semibold">{selectedTreatment.popularity}/10</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl">{selectedTreatment.categoryIcon}</div>
+                      <div className="text-sm font-semibold">Premium</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setSelectedTreatment(null)}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-colors"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleServiceToggle(selectedTreatment)
+                      setSelectedTreatment(null)
+                    }}
+                    className={`flex-1 font-semibold py-3 rounded-xl transition-all ${
+                      selectedServices.find(s => s.id === selectedTreatment.id)
+                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                        : 'bg-gradient-to-r from-salon-primary to-salon-secondary hover:shadow-lg text-white'
+                    }`}
+                  >
+                    {selectedServices.find(s => s.id === selectedTreatment.id) ? 'Hapus dari Keranjang' : 'Tambah ke Keranjang'}
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

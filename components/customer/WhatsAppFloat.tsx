@@ -1,11 +1,23 @@
-// Floating WhatsApp Contact Button
+// Ultra-Adaptive WhatsApp Contact Button
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const WhatsAppFloat = () => {
   const [isHovered, setIsHovered] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // Track scroll for adaptive positioning
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY
+      setIsScrolled(scrollY > 200)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const handleWhatsAppClick = () => {
     const message = encodeURIComponent(`Assalamu'alaikum Kak Dina! 🌸
@@ -23,9 +35,16 @@ Jazakillahu khairan 🤲`)
 
   return (
     <motion.div
-      className="fixed bottom-6 right-6 z-50"
+      className={`fixed z-30 transition-all duration-300 ${
+        isScrolled 
+          ? 'bottom-4 right-4' 
+          : 'bottom-6 right-6'
+      }`}
       initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
+      animate={{ 
+        scale: isScrolled ? 0.9 : 1, 
+        opacity: 1 
+      }}
       transition={{ delay: 2, type: "spring", stiffness: 200 }}
     >
       <motion.button
@@ -34,8 +53,9 @@ Jazakillahu khairan 🤲`)
         onMouseLeave={() => setIsHovered(false)}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className="relative bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-2xl transition-all duration-300 group"
-        style={{ borderRadius: '50%' }}
+        className={`relative bg-green-500 hover:bg-green-600 text-white shadow-2xl transition-all duration-300 group ${
+          isScrolled ? 'p-3 rounded-2xl' : 'p-4 rounded-full'
+        }`}
       >
         {/* WhatsApp Icon */}
         <motion.svg 

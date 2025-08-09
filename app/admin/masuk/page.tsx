@@ -1,254 +1,288 @@
+// Professional Admin Login Page - Indonesian Business Language
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
-
-interface LoginForm {
-  username: string
-  password: string
-}
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminLogin() {
-  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset
-  } = useForm<LoginForm>()
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: ''
+  })
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [attempts, setAttempts] = useState(0)
+  const [lockoutTime, setLockoutTime] = useState<number | null>(null)
 
-  const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true)
+  // Check for existing session
+  useEffect(() => {
+    const checkSession = async () => {
+      const session = await getSession()
+      if (session) {
+        router.push('/admin/dashboard')
+      }
+    }
+    checkSession()
+  }, [router])
+
+  // Handle rate limiting
+  useEffect(() => {
+    if (lockoutTime && lockoutTime > Date.now()) {
+      const timer = setTimeout(() => {
+        setLockoutTime(null)
+        setAttempts(0)
+      }, lockoutTime - Date.now())
+      
+      return () => clearTimeout(timer)
+    }
+  }, [lockoutTime])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     
+    if (lockoutTime && lockoutTime > Date.now()) {
+      const remainingTime = Math.ceil((lockoutTime - Date.now()) / 1000)
+      setError(`Terlalu banyak percobaan gagal. Silakan tunggu ${remainingTime} detik.`)
+      return
+    }
+
+    if (!credentials.username.trim() || !credentials.password.trim()) {
+      setError('Username dan password harus diisi')
+      return
+    }
+
+    setIsLoading(true)
+    setError('')
+
     try {
       const result = await signIn('credentials', {
-        username: data.username,
-        password: data.password,
+        username: credentials.username.trim(),
+        password: credentials.password,
         redirect: false,
       })
 
       if (result?.error) {
-        toast.error(result.error, {
-          duration: 4000,
-        })
-      } else {
-        toast.success('Login berhasil! Selamat datang kembali.', {
-          duration: 3000,
-        })
+        const newAttempts = attempts + 1
+        setAttempts(newAttempts)
         
-        const session = await getSession()
-        if (session) {
-          router.push('/admin')
-          router.refresh()
+        if (newAttempts >= 3) {
+          setLockoutTime(Date.now() + 60000) // 1 minute lockout
+          setError('Terlalu banyak percobaan gagal. Sistem dikunci selama 1 menit.')
+        } else {
+          setError('Username atau password salah. Sisa percobaan: ' + (3 - newAttempts))
         }
+      } else {
+        setAttempts(0)
+        router.push('/admin/dashboard')
       }
-    } catch (error) {
-      console.error('Login error:', error)
-      toast.error('Terjadi kesalahan. Silakan coba lagi.')
+    } catch (err) {
+      setError('Terjadi kesalahan sistem. Silakan coba lagi.')
     } finally {
       setIsLoading(false)
-      reset()
     }
   }
 
+  const getRemainingLockoutTime = () => {
+    if (!lockoutTime || lockoutTime <= Date.now()) return 0
+    return Math.ceil((lockoutTime - Date.now()) / 1000)
+  }
+
   return (
-    <div className="min-h-screen salon-gradient-bg salon-pattern flex items-center justify-center p-4">
-      {/* Islamic Greeting */}
-      <div className="absolute top-8 left-0 right-0">
-        <div className="bismillah-elegant">
-          بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
+      {/* Professional Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div 
+          className="w-full h-full"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23334155' fill-opacity='0.4'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='53' cy='53' r='1'/%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundSize: '60px 60px'
+          }}
+        />
       </div>
 
       <motion.div
-        className="w-full max-w-md"
-        initial={{ opacity: 0, y: 50 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
+        transition={{ duration: 0.6 }}
+        className="relative z-10 w-full max-w-md"
       >
-        {/* Welcome Section */}
-        <div className="text-center mb-8">
+        {/* Professional Header */}
+        <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/50 p-8">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="text-center mb-8"
           >
-            <p className="font-kalam text-lg text-salon-islamic mb-4">
-              Assalamu&apos;alaikum wa rahmatullahi wa barakatuh
+            {/* Business Logo Area */}
+            <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-6 shadow-lg border border-slate-200">
+              <img 
+                src="/logo.jpeg" 
+                alt="Salon Muslimah Dina" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            <h1 className="text-2xl font-bold text-slate-800 mb-2">
+              Portal Manajemen Bisnis
+            </h1>
+            <p className="text-slate-600 text-sm">
+              Salon Muslimah Dina - Medan
             </p>
+            <div className="w-16 h-0.5 bg-gradient-to-r from-slate-300 to-slate-500 mx-auto mt-4"></div>
           </motion.div>
 
-          <h1 className="salon-header-lg mb-2">
-            Salon Muslimah Dina
-          </h1>
-          <p className="font-dancing text-2xl text-salon-primary mb-6">
-            Portal Admin
-          </p>
-        </div>
+          {/* Professional Login Form */}
+          <motion.form
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            onSubmit={handleSubmit}
+            className="space-y-6"
+          >
+            {/* Error Display */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">⚠️</span>
+                    <span>{error}</span>
+                  </div>
+                  {lockoutTime && lockoutTime > Date.now() && (
+                    <div className="mt-2 text-xs text-red-600">
+                      Waktu tersisa: {getRemainingLockoutTime()} detik
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        {/* Login Card */}
-        <motion.div
-          className="salon-card p-8"
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="salon-header-md text-salon-text mb-2">
-                Masuk Admin
-              </h2>
-              <p className="font-inter text-salon-text-muted">
-                Silakan masuk untuk mengakses dashboard
-              </p>
+            {/* Username Field */}
+            <div>
+              <label 
+                htmlFor="username" 
+                className="block text-sm font-semibold text-slate-700 mb-2"
+              >
+                Username Administrator
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={credentials.username}
+                onChange={(e) => setCredentials({...credentials, username: e.target.value})}
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 bg-slate-50 focus:bg-white"
+                placeholder="Masukkan username"
+                disabled={isLoading || !!(lockoutTime && lockoutTime > Date.now())}
+              />
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="salon-form-group">
-                <label htmlFor="username" className="salon-label">
-                  Nama Pengguna
-                </label>
-                <input
-                  {...register('username', {
-                    required: 'Nama pengguna wajib diisi',
-                    minLength: {
-                      value: 3,
-                      message: 'Nama pengguna minimal 3 karakter'
-                    }
-                  })}
-                  type="text"
-                  id="username"
-                  placeholder="Masukkan nama pengguna"
-                  className="salon-input"
-                  disabled={isLoading}
-                />
-                {errors.username && (
-                  <motion.p
-                    className="salon-error"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    {errors.username.message}
-                  </motion.p>
-                )}
-              </div>
+            {/* Password Field */}
+            <div>
+              <label 
+                htmlFor="password" 
+                className="block text-sm font-semibold text-slate-700 mb-2"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={credentials.password}
+                onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 bg-slate-50 focus:bg-white"
+                placeholder="Masukkan password"
+                disabled={isLoading || !!(lockoutTime && lockoutTime > Date.now())}
+              />
+            </div>
 
-              <div className="salon-form-group">
-                <label htmlFor="password" className="salon-label">
-                  Kata Sandi
-                </label>
-                <input
-                  {...register('password', {
-                    required: 'Kata sandi wajib diisi',
-                    minLength: {
-                      value: 6,
-                      message: 'Kata sandi minimal 6 karakter'
-                    }
-                  })}
-                  type="password"
-                  id="password"
-                  placeholder="Masukkan kata sandi"
-                  className="salon-input"
-                  disabled={isLoading}
-                />
-                {errors.password && (
-                  <motion.p
-                    className="salon-error"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    {errors.password.message}
-                  </motion.p>
-                )}
+            {/* Security Notice */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+              <div className="flex items-start gap-3 text-xs text-slate-600">
+                <span className="text-blue-500 text-sm">🔐</span>
+                <div>
+                  <p className="font-medium mb-1">Keamanan Sistem:</p>
+                  <ul className="space-y-1">
+                    <li>• Sesi otomatis berakhir dalam 30 menit</li>
+                    <li>• Maksimal 3 percobaan login</li>
+                    <li>• Akses dibatasi untuk administrator</li>
+                  </ul>
+                </div>
               </div>
+            </div>
 
-              <div className="pt-4">
-                {isLoading ? (
-                  <div className="flex justify-center items-center py-3">
-                    <div className="salon-skeleton w-8 h-8 rounded-full mr-3"></div>
-                    <span className="font-inter text-salon-text">Memproses login...</span>
-                  </div>
-                ) : (
-                  <motion.button
-                    type="submit"
-                    className="salon-button-primary w-full"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Masuk ke Dashboard
-                  </motion.button>
-                )}
+            {/* Login Button */}
+            <motion.button
+              type="submit"
+              disabled={isLoading || !!(lockoutTime && lockoutTime > Date.now())}
+              whileHover={!isLoading ? { scale: 1.02 } : {}}
+              whileTap={!isLoading ? { scale: 0.98 } : {}}
+              className="w-full bg-gradient-to-r from-slate-700 to-slate-900 text-white font-semibold py-3 px-6 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Memverifikasi...</span>
+                </>
+              ) : (
+                <>
+                  <span>🔓</span>
+                  <span>Masuk Sistem</span>
+                </>
+              )}
+            </motion.button>
+
+            {/* Attempt Counter */}
+            {attempts > 0 && attempts < 3 && (
+              <div className="text-center text-xs text-slate-500">
+                Percobaan: {attempts}/3
               </div>
-            </form>
+            )}
+          </motion.form>
 
-            <div className="salon-divider"></div>
-            
-            <div className="text-center">
-              <p className="font-inter text-sm text-salon-text-muted">
-                Salon Muslimah Dina - Kecantikan Islami untuk Wanita Muslimah
-              </p>
+          {/* Professional Footer */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="mt-8 pt-6 border-t border-slate-200 text-center"
+          >
+            <p className="text-xs text-slate-500 mb-2">
+              © 2024 Salon Muslimah Dina
+            </p>
+            <p className="text-xs text-slate-400">
+              Sistem Manajemen Bisnis Internal
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Business Hours Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.5 }}
+          className="mt-6 bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-200/50"
+        >
+          <div className="text-center text-sm text-slate-600">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span>🕐</span>
+              <span className="font-medium">Jam Operasional Sistem</span>
+            </div>
+            <div className="text-xs text-slate-500 space-y-1">
+              <div>Senin - Sabtu: 08:00 - 18:00</div>
+              <div>Minggu: 10:00 - 16:00</div>
+              <div className="text-slate-400 mt-2">📍 Medan, Sumatera Utara</div>
             </div>
           </div>
         </motion.div>
-
-        {/* Footer Quote */}
-        <motion.div
-          className="text-center mt-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
-          <p className="font-dancing text-salon-islamic text-lg">
-            &ldquo;Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu 
-            isteri-isteri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya&rdquo;
-          </p>
-          <p className="font-inter text-salon-text-muted text-sm mt-2">
-            - QS. Ar-Rum: 21
-          </p>
-        </motion.div>
       </motion.div>
-
-      {/* Decorative Elements */}
-      <div className="fixed top-20 right-10 pointer-events-none">
-        <motion.div
-          className="text-salon-primary text-3xl opacity-20"
-          animate={{ 
-            rotate: [0, 5, -5, 0],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{ 
-            duration: 4, 
-            repeat: Infinity, 
-            ease: "easeInOut" 
-          }}
-        >
-          🌸
-        </motion.div>
-      </div>
-
-      <div className="fixed bottom-10 left-10 pointer-events-none">
-        <motion.div
-          className="text-salon-islamic text-xl opacity-20"
-          animate={{ 
-            y: [-5, 5, -5],
-            x: [-2, 2, -2]
-          }}
-          transition={{ 
-            duration: 3, 
-            repeat: Infinity, 
-            ease: "easeInOut",
-            delay: 1
-          }}
-        >
-          ☪️
-        </motion.div>
-      </div>
     </div>
   )
 }

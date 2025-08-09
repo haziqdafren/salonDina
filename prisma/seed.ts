@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { sampleTherapists, sampleServices, sampleCustomers, serviceCategories } from '../data/therapists'
+import { sampleTherapists, sampleServices, sampleCustomers, serviceCategories } from '../data/sampleData'
 
 const prisma = new PrismaClient()
 
@@ -83,26 +83,23 @@ async function main() {
 
   console.log('✅ Customers created:', customers.length)
 
-  // Create business hours
+  // Create business hours - Medan 7-day operations (09:00-18:30 every day)
   const businessHours = await Promise.all([
     ...Array.from({ length: 7 }, (_, i) => {
-      const isWorkingDay = i >= 1 && i <= 6 // Monday to Saturday
-      const isFriday = i === 5
-
       return prisma.businessHour.upsert({
         where: { dayOfWeek: i },
         update: {
-          openTime: isWorkingDay ? (i === 0 ? '10:00' : '09:00') : '10:00',
-          closeTime: isWorkingDay ? (i === 0 ? '15:00' : '17:00') : '15:00',
-          isOpen: i !== 0 || i === 0, // Sunday has different hours
-          notes: isFriday ? 'Tutup 12:00-13:30 untuk sholat Jumat' : undefined,
+          openTime: '09:00',
+          closeTime: '18:30',
+          isOpen: true, // Open every day - competitive advantage!
+          notes: 'Fleksibel mengikuti waktu sholat dalam jam operasional',
         },
         create: {
           dayOfWeek: i,
-          openTime: isWorkingDay ? (i === 0 ? '10:00' : '09:00') : '10:00',
-          closeTime: isWorkingDay ? (i === 0 ? '15:00' : '17:00') : '15:00',
-          isOpen: i !== 0 || i === 0, // Sunday has different hours
-          notes: isFriday ? 'Tutup 12:00-13:30 untuk sholat Jumat' : undefined,
+          openTime: '09:00',
+          closeTime: '18:30',
+          isOpen: true, // Open every day - competitive advantage!
+          notes: 'Fleksibel mengikuti waktu sholat dalam jam operasional',
         },
       })
     })
@@ -123,8 +120,7 @@ async function main() {
       const treatmentDate = new Date(today)
       treatmentDate.setDate(today.getDate() - i)
       
-      // Skip Sundays
-      if (treatmentDate.getDay() === 0) continue
+      // No skipping days - we operate 7 days a week!
 
       // Random number of treatments per day (2-8)
       const treatmentsPerDay = Math.floor(Math.random() * 7) + 2
@@ -184,8 +180,7 @@ async function main() {
       const entryDate = new Date(today)
       entryDate.setDate(today.getDate() - i)
       
-      // Skip Sundays
-      if (entryDate.getDay() === 0) continue
+      // No skipping days - we operate 7 days a week!
 
       // Calculate daily revenue from treatments
       const startOfDay = new Date(entryDate)
@@ -338,19 +333,19 @@ async function main() {
     }),
     prisma.setting.upsert({
       where: { key: 'salon_address' },
-      update: { value: 'Jl. Mawar Indah No. 123, Jakarta Selatan' },
+      update: { value: 'Jl. Setia Budi No. 45B, Medan Selayang, Sumatera Utara 20132' },
       create: {
         key: 'salon_address',
-        value: 'Jl. Mawar Indah No. 123, Jakarta Selatan',
+        value: 'Jl. Setia Budi No. 45B, Medan Selayang, Sumatera Utara 20132',
         category: 'general',
       }
     }),
     prisma.setting.upsert({
       where: { key: 'salon_phone' },
-      update: { value: '+62 812-3456-7890' },
+      update: { value: '+62 (061) 812-3456-7890' },
       create: {
         key: 'salon_phone',
-        value: '+62 812-3456-7890',
+        value: '+62 (061) 812-3456-7890',
         category: 'contact',
       }
     }),
