@@ -7,11 +7,11 @@ export const treatmentCategories = {
     icon: "🌿",
     description: "Perawatan waxing profesional dengan produk halal",
     items: [
-      { id: 1, name: "Ketiak", hargaNormal: 30000, hargaPromo: null, duration: 30, popularity: 8 },
-      { id: 2, name: "Tangan", hargaNormal: 50000, hargaPromo: null, duration: 45, popularity: 6 },
-      { id: 3, name: "Kaki", hargaNormal: 60000, hargaPromo: null, duration: 60, popularity: 7 },
-      { id: 4, name: "Tangan + Kaki", hargaNormal: 100000, hargaPromo: null, duration: 90, popularity: 9 },
-      { id: 5, name: "Ketiak Tangan Kaki", hargaNormal: 120000, hargaPromo: null, duration: 120, popularity: 5 }
+      { id: 1, name: "Wax Ketiak", hargaNormal: 30000, hargaPromo: null, duration: 30, popularity: 8 },
+      { id: 2, name: "Wax Tangan", hargaNormal: 50000, hargaPromo: null, duration: 45, popularity: 6 },
+      { id: 3, name: "Wax Kaki", hargaNormal: 60000, hargaPromo: null, duration: 60, popularity: 7 },
+      { id: 4, name: "Wax Tangan + Kaki", hargaNormal: 100000, hargaPromo: null, duration: 90, popularity: 9 },
+      { id: 5, name: "Wax Ketiak Tangan Kaki", hargaNormal: 120000, hargaPromo: null, duration: 120, popularity: 5 }
     ]
   },
   perawatanTanganKaki: {

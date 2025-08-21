@@ -173,7 +173,7 @@ Wassalamu'alaikum`;
 
     // THEN: Open WhatsApp for confirmation
     const message = generateWhatsAppMessage();
-    const whatsappUrl = `https://wa.me/6281234567890?text=${message}`;
+    const whatsappUrl = `https://wa.me/6282170677736?text=${message}`;
     window.open(whatsappUrl, '_blank');
     setShowConfirmation(true);
   };

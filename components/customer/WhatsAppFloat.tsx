@@ -29,7 +29,7 @@ Saya mau tanya-tanya tentang treatment di salon. Bisa dibantu ya kak?
 
 Jazakillahu khairan 🤲`)
     
-    const whatsappUrl = `https://wa.me/6281234567890?text=${message}`
+    const whatsappUrl = `https://wa.me/6282170677736?text=${message}`
     window.open(whatsappUrl, '_blank')
   }
 

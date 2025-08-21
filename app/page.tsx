@@ -12,7 +12,7 @@ import CustomerNavbar from '../components/customer/CustomerNavbar'
 export default function Homepage() {
   const [clickCount, setClickCount] = useState(0)
   const router = useRouter()
-  const whatsappNumber = "+6206181234567890"
+  const whatsappNumber = "+6282170677736"
   const whatsappMessage = "Assalamu'alaikum, saya ingin booking dan bertanya tentang layanan Salon Muslimah Dina di Medan. Apakah masih ada slot hari ini?"
 
   // Logo click handler for admin access
@@ -553,10 +553,10 @@ export default function Homepage() {
                 <div className="text-4xl mb-3">📍</div>
                 <h4 className="salon-header-sm mb-2">Lokasi</h4>
                 <p className="font-inter text-salon-text">
-                  Jl. Setia Budi No. 45B<br />
-                  Medan Selayang, Kota Medan<br />
-                  Sumatera Utara 20132<br />
-                  <small className="text-salon-accent">📍 Dekat RS Columbia Asia</small>
+                  Jl. Perhubungan, Tembung<br />
+                  Percut Sei Tuan, Kabupaten Deli Serdang<br />
+                  Sumatera Utara 20371<br />
+                  <small className="text-salon-accent">📍 Dekat SPBU Lau Dendang</small>
                 </p>
               </div>
               
@@ -574,7 +574,7 @@ export default function Homepage() {
                 <div className="text-4xl mb-3">📱</div>
                 <h4 className="salon-header-sm mb-2">Kontak</h4>
                 <p className="font-inter text-salon-text">
-                  WhatsApp: +62 (061) 812-3456-7890<br />
+                  WhatsApp: +62 821-7067-7736<br />
                   Instagram: @dina_salon_muslimah<br />
                   Email: medan@salonmuslimah.com
                 </p>
