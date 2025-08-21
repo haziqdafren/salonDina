@@ -314,7 +314,7 @@ export default function KelolaTherapist() {
             <p className="text-gray-600">Manajemen lengkap data therapist salon</p>
           </div>
           <Link href="/admin/kelola-therapist/tambah">
-            <button className="salon-button-primary flex items-center gap-2">
+            <button className="salon-btn-primary flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -619,7 +619,7 @@ export default function KelolaTherapist() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowDeleteConfirm(null)}
-                      className="salon-button-secondary flex-1"
+                      className="salon-btn-secondary flex-1"
                     >
                       Batal
                     </button>

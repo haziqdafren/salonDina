@@ -299,50 +299,50 @@ export default function Homepage() {
             {[
               {
                 title: 'Perawatan Wajah',
-                description: 'Facial, cleansing, dan treatment wajah dengan produk halal',
+                description: 'Facial, microdermabrasi, dan treatment wajah dengan teknologi terkini',
                 icon: '✨',
-                price: 'Mulai Rp 150.000',
-                benefits: ['Deep cleansing', 'Brightening', 'Anti-aging', 'Relaxing'],
+                price: 'Mulai Rp 40.000',
+                benefits: ['Facial Detox', 'Whitening', 'PDT Technology', 'Lumiface'],
                 isSpecial: false
               },
               {
                 title: 'Perawatan Rambut',
-                description: 'Hair spa, creambath, dan styling rambut profesional',
+                description: 'Hair spa, creambath, smoothing dengan produk premium',
                 icon: '💇‍♀️',
-                price: 'Mulai Rp 75.000',
-                benefits: ['Hair spa', 'Creambath', 'Styling', 'Hair mask'],
+                price: 'Mulai Rp 20.000',
+                benefits: ['Hair SPA', 'Nano Technology', 'Japanese Head SPA', 'Smoothing'],
                 isSpecial: false
               },
               {
                 title: 'Perawatan Tubuh',
-                description: 'Body massage dan spa treatment relaksasi',
+                description: 'Body massage, lulur, sauna dengan produk alami',
                 icon: '🤲',
-                price: 'Mulai Rp 150.000',
-                benefits: ['Body massage', 'Body scrub', 'Aromaterapi', 'Relaksasi'],
+                price: 'Mulai Rp 35.000',
+                benefits: ['Body massage', 'Lulur traditional', 'Sauna', 'Rempah ratus'],
                 isSpecial: false
               },
               {
-                title: 'Perawatan Kuku',
-                description: 'Perawatan kuku tangan dan kaki yang higienis',
+                title: 'Perawatan Tangan & Kaki',
+                description: 'Manicure, pedicure, dan refleksi kaki profesional',
                 icon: '💅',
-                price: 'Mulai Rp 80.000',
-                benefits: ['Manicure', 'Pedicure', 'Polish halal', 'Foot spa'],
+                price: 'Mulai Rp 45.000',
+                benefits: ['Manicure', 'Pedicure', 'Refleksi kaki', 'Callus treatment'],
                 isSpecial: false
               },
               {
                 title: 'Paket Pengantin',
-                description: 'Paket lengkap untuk hari bahagia Anda',
+                description: 'Paket lengkap premium untuk hari bahagia Anda',
                 icon: '👰',
-                price: 'Mulai Rp 1.500.000',
-                benefits: ['Makeup pengantin', 'Hair do', 'Spa treatment', 'Konsultasi'],
+                price: 'Mulai Rp 400.000',
+                benefits: ['Hair SPA', 'Facial + PDT', 'Full body treatment', 'Free products'],
                 isSpecial: true
               },
               {
-                title: 'Paket Membership',
-                description: 'Paket bulanan dengan berbagai keuntungan',
-                icon: '🎁',
-                price: 'Mulai Rp 650.000',
-                benefits: ['4x treatment', 'Diskon khusus', 'Priority booking', 'VIP service'],
+                title: 'Terapi Bekam',
+                description: 'Terapi bekam sesuai sunnah dengan peralatan steril',
+                icon: '🩸',
+                price: 'Mulai Rp 70.000',
+                benefits: ['Bekam traditional', 'Massage therapy', 'Hair treatment combo', 'Holistic healing'],
                 isSpecial: true
               }
             ].map((service, index) => (
@@ -390,7 +390,7 @@ export default function Homepage() {
                       <h3 className="salon-header text-xl mb-3">
                         {service.title}
                       </h3>
-                      <div className="text-2xl font-bold"
+                      <div className="text-xl font-bold"
                            style={{ 
                              background: 'linear-gradient(135deg, var(--salon-gold), var(--salon-accent))',
                              WebkitBackgroundClip: 'text',

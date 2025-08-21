@@ -29,19 +29,11 @@ interface ServiceFormData {
   isActive: boolean
 }
 
-const SERVICE_CATEGORIES = [
-  'Facial Treatment',
-  'Body Treatment', 
-  'Hair Treatment',
-  'Massage',
-  'Spa Package',
-  'Bridal Package',
-  'Skincare',
-  'Others'
-]
+// Categories will be loaded dynamically from the API
 
 export default function LayananHarga() {
   const [services, setServices] = useState<Service[]>([])
+  const [categories, setCategories] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -71,6 +63,7 @@ export default function LayananHarga() {
         const result = await response.json()
         if (result.success) {
           setServices(result.data)
+          setCategories(result.categories || [])
         } else {
           console.error('Failed to fetch services:', result.error)
         }
@@ -215,7 +208,7 @@ export default function LayananHarga() {
     handleItemsPerPageChange
   } = usePagination(filteredServices, 10)
 
-  const categories = Array.from(new Set(services.map(s => s.category)))
+  // Categories are now loaded from the API
 
   // Show loading state
   if (loading) {
@@ -418,7 +411,7 @@ export default function LayananHarga() {
                     className="salon-input"
                   >
                     <option value="">Pilih Kategori</option>
-                    {SERVICE_CATEGORIES.map(category => (
+                    {categories.map(category => (
                       <option key={category} value={category}>{category}</option>
                     ))}
                   </select>

@@ -3,20 +3,11 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { treatmentCategories, formatRupiah, calculateTotalDuration, calculateTotalPrice } from '../../data/treatments'
+import { formatRupiah, calculateTotalDuration, calculateTotalPrice, getCategoryDisplayName, getCategoryIcon, Treatment } from '../../lib/utils/treatmentUtils'
 import { getCurrentBusinessStatus, getAvailableSlots, isWithinPrayerTime, SALON_BUSINESS_HOURS } from '../../lib/utils/businessHours'
 import IndonesianPaymentMethods from '../payment/IndonesianPaymentMethods'
 
-interface Treatment {
-  id: number
-  name: string
-  hargaNormal: number
-  hargaPromo: number | null
-  duration: number
-  popularity: number
-  category?: string
-  categoryIcon?: string
-}
+// Treatment interface imported from utils
 
 interface CustomerInfo {
   name: string
@@ -32,6 +23,9 @@ const BookingSystem = () => {
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null)
+  const [treatments, setTreatments] = useState<Treatment[]>([])
+  const [categories, setCategories] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
     phone: '',
@@ -43,24 +37,33 @@ const BookingSystem = () => {
   const [totalDuration, setTotalDuration] = useState(0)
   const [showConfirmation, setShowConfirmation] = useState(false)
 
-  // Create flattened treatments array with category info
-  const allTreatments = useMemo(() => {
-    const treatments: Treatment[] = []
-    Object.entries(treatmentCategories).forEach(([categoryKey, category]) => {
-      category.items.forEach(item => {
-        treatments.push({
-          ...item,
-          category: categoryKey,
-          categoryIcon: category.icon
-        })
-      })
-    })
-    return treatments
+  // Fetch treatments from API on component mount
+  useEffect(() => {
+    fetchTreatments()
   }, [])
+
+  // Fetch treatments from database API
+  const fetchTreatments = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/services?active=true')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setTreatments(result.data)
+          setCategories(result.categories || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching treatments:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Filter treatments based on search and category
   const filteredTreatments = useMemo(() => {
-    let filtered = allTreatments
+    let filtered = treatments.filter(treatment => treatment.isActive)
 
     if (activeCategory !== 'all') {
       filtered = filtered.filter(treatment => treatment.category === activeCategory)
@@ -68,23 +71,34 @@ const BookingSystem = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(treatment =>
-        treatment.name.toLowerCase().includes(searchTerm.toLowerCase())
+        treatment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        treatment.category.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
     return filtered.sort((a, b) => b.popularity - a.popularity)
-  }, [allTreatments, activeCategory, searchTerm])
+  }, [treatments, activeCategory, searchTerm])
 
-  // Category tabs data
-  const categoryTabs = [
-    { key: 'all', title: 'Semua', icon: '✨', count: allTreatments.length },
-    ...Object.entries(treatmentCategories).map(([key, category]) => ({
-      key,
-      title: category.title,
-      icon: category.icon,
-      count: category.items.length
-    }))
-  ]
+  // Category tabs data - generate from live data
+  const categoryTabs = useMemo(() => {
+    const tabs = [
+      { key: 'all', title: 'Semua', icon: '✨', count: treatments.filter(t => t.isActive).length }
+    ]
+    
+    categories.forEach(category => {
+      const count = treatments.filter(t => t.category === category && t.isActive).length
+      if (count > 0) {
+        tabs.push({
+          key: category,
+          title: getCategoryDisplayName(category),
+          icon: getCategoryIcon(category),
+          count
+        })
+      }
+    })
+    
+    return tabs
+  }, [treatments, categories])
 
   // Calculate totals whenever services change
   useEffect(() => {
@@ -105,7 +119,7 @@ const BookingSystem = () => {
 
   const generateWhatsAppMessage = () => {
     const services = selectedServices.map(s => 
-      `• ${s.name} - ${formatRupiah(s.hargaPromo || s.hargaNormal)}`
+      `• ${s.name} - ${formatRupiah(s.promoPrice || s.normalPrice)}`
     ).join('\n');
 
     const message = `Assalamu'alaikum Kak Dina! 🌸
@@ -148,7 +162,7 @@ Wassalamu'alaikum`;
         date: customerInfo.date,
         time: customerInfo.time.replace(' 🕌', ''), // Clean up prayer time indicator
         status: 'pending',
-        notes: `${customerInfo.notes || 'Tidak ada catatan khusus'}\n\nLayanan detail:\n${selectedServices.map(s => `• ${s.name} - ${formatRupiah(s.hargaPromo || s.hargaNormal)} (${s.duration}m)`).join('\n')}\n\nTotal Estimasi: ${formatRupiah(totalPrice)}\nEstimasi Durasi: ${Math.ceil(totalDuration / 60)} jam ${totalDuration % 60} menit`
+        notes: `${customerInfo.notes || 'Tidak ada catatan khusus'}\n\nLayanan detail:\n${selectedServices.map(s => `• ${s.name} - ${formatRupiah(s.promoPrice || s.normalPrice)} (${s.duration}m)`).join('\n')}\n\nTotal Estimasi: ${formatRupiah(totalPrice)}\nEstimasi Durasi: ${Math.ceil(totalDuration / 60)} jam ${totalDuration % 60} menit`
       };
 
       // Save to database
@@ -202,6 +216,22 @@ Wassalamu'alaikum`;
     const today = new Date();
     return today.toISOString().split('T')[0];
   };
+
+  // Helper functions are now imported from utils
+
+  // Show loading state
+  if (loading) {
+    return (
+      <section className="py-20 px-4 ornamental-background salon-gradient-bg relative overflow-hidden">
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-salon-primary mx-auto mb-4"></div>
+            <p className="text-salon-charcoal text-lg">Memuat layanan treatment...</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="py-20 px-4 ornamental-background salon-gradient-bg relative overflow-hidden">
@@ -353,7 +383,7 @@ Wassalamu'alaikum`;
                     )}
 
                     {/* Promo Badge */}
-                    {treatment.hargaPromo && (
+                    {treatment.promoPrice && (
                       <div className="absolute top-3 left-3">
                         <div className="bg-gradient-to-r from-green-400 to-green-600 text-white text-xs px-2 py-1 rounded-full font-bold">
                           PROMO
@@ -362,24 +392,24 @@ Wassalamu'alaikum`;
                     )}
 
                     <div className="text-center">
-                      <div className="text-3xl mb-3">{treatment.categoryIcon}</div>
+                      <div className="text-3xl mb-3">{getCategoryIcon(treatment.category)}</div>
                       <h4 className="font-bold text-slate-800 mb-2 group-hover:text-salon-primary transition-colors">
                         {treatment.name}
                       </h4>
                       
                       <div className="mb-3">
-                        {treatment.hargaPromo ? (
+                        {treatment.promoPrice ? (
                           <div className="space-y-1">
                             <div className="text-xl font-bold text-green-600">
-                              {formatRupiah(treatment.hargaPromo)}
+                              {formatRupiah(treatment.promoPrice)}
                             </div>
                             <div className="text-sm text-slate-400 line-through">
-                              {formatRupiah(treatment.hargaNormal)}
+                              {formatRupiah(treatment.normalPrice)}
                             </div>
                           </div>
                         ) : (
                           <div className="text-xl font-bold text-slate-700">
-                            {formatRupiah(treatment.hargaNormal)}
+                            {formatRupiah(treatment.normalPrice)}
                           </div>
                         )}
                       </div>
@@ -784,27 +814,27 @@ Wassalamu'alaikum`;
                 className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
               >
                 <div className="text-center mb-6">
-                  <div className="text-5xl mb-4">{selectedTreatment.categoryIcon}</div>
+                  <div className="text-5xl mb-4">{getCategoryIcon(selectedTreatment.category)}</div>
                   <h3 className="text-2xl font-bold text-slate-800 mb-2">
                     {selectedTreatment.name}
                   </h3>
                   
                   <div className="mb-4">
-                    {selectedTreatment.hargaPromo ? (
+                    {selectedTreatment.promoPrice ? (
                       <div className="space-y-2">
                         <div className="text-3xl font-bold text-green-600">
-                          {formatRupiah(selectedTreatment.hargaPromo)}
+                          {formatRupiah(selectedTreatment.promoPrice)}
                         </div>
                         <div className="text-lg text-slate-400 line-through">
-                          {formatRupiah(selectedTreatment.hargaNormal)}
+                          {formatRupiah(selectedTreatment.normalPrice)}
                         </div>
                         <div className="inline-block bg-green-500 text-white text-sm px-3 py-1 rounded-full font-bold">
-                          HEMAT {formatRupiah(selectedTreatment.hargaNormal - selectedTreatment.hargaPromo)}
+                          HEMAT {formatRupiah(selectedTreatment.normalPrice - selectedTreatment.promoPrice)}
                         </div>
                       </div>
                     ) : (
                       <div className="text-3xl font-bold text-slate-700">
-                        {formatRupiah(selectedTreatment.hargaNormal)}
+                        {formatRupiah(selectedTreatment.normalPrice)}
                       </div>
                     )}
                   </div>
@@ -819,7 +849,7 @@ Wassalamu'alaikum`;
                       <div className="text-sm font-semibold">{selectedTreatment.popularity}/10</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl">{selectedTreatment.categoryIcon}</div>
+                      <div className="text-2xl">{getCategoryIcon(selectedTreatment.category)}</div>
                       <div className="text-sm font-semibold">Premium</div>
                     </div>
                   </div>

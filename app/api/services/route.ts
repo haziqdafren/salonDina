@@ -20,14 +20,14 @@ export async function GET(request: NextRequest) {
     }
     
     if (category) {
-      where.category = { contains: category, mode: 'insensitive' }
+      where.category = { contains: category }
     }
     
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } }
+        { name: { contains: search } },
+        { description: { contains: search } },
+        { category: { contains: search } }
       ]
     }
 
@@ -62,8 +62,8 @@ export async function GET(request: NextRequest) {
         id: service.id,
         name: service.name,
         category: service.category,
-        hargaNormal: service.normalPrice,
-        hargaPromo: service.promoPrice,
+        normalPrice: service.normalPrice,
+        promoPrice: service.promoPrice,
         duration: service.duration,
         description: service.description,
         isActive: service.isActive,
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
         total: servicesWithStats.length,
         active: servicesWithStats.filter(s => s.isActive).length,
         inactive: servicesWithStats.filter(s => !s.isActive).length,
-        withPromo: servicesWithStats.filter(s => s.hargaPromo).length
+        withPromo: servicesWithStats.filter(s => s.promoPrice).length
       }
     })
 
@@ -152,8 +152,8 @@ export async function POST(request: NextRequest) {
         id: service.id,
         name: service.name,
         category: service.category,
-        hargaNormal: service.normalPrice,
-        hargaPromo: service.promoPrice,
+        normalPrice: service.normalPrice,
+        promoPrice: service.promoPrice,
         duration: service.duration,
         description: service.description,
         isActive: service.isActive,
