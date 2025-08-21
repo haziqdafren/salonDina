@@ -258,10 +258,11 @@ export async function DELETE(
       )
     }
 
-    // Only allow deletion of pending or cancelled bookings
-    if (existingBooking.status === 'completed') {
+    // Only prevent deletion of confirmed bookings (active bookings)
+    // Allow deletion of pending, completed, and cancelled bookings for admin cleanup
+    if (existingBooking.status === 'confirmed') {
       return NextResponse.json(
-        { success: false, error: 'Cannot delete completed bookings' },
+        { success: false, error: 'Cannot delete confirmed bookings. Cancel first or mark as completed.' },
         { status: 400 }
       )
     }

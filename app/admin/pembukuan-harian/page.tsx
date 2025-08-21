@@ -197,21 +197,40 @@ export default function PembukuanHarian() {
 
   // Quick add multiple treatments
   const handleQuickAddSubmit = async () => {
+    // Validate all items first
+    const invalidItems = quickAddItems.filter(item => 
+      !item.customerName.trim() || 
+      !item.serviceId || 
+      !item.therapistId
+    )
+
+    if (invalidItems.length > 0) {
+      alert(`Please fill in all required fields for all treatments. ${invalidItems.length} items need completion.`)
+      return
+    }
+
     try {
-      const submitPromises = quickAddItems.map(async (item) => {
+      const submitPromises = quickAddItems.map(async (item, index) => {
         const service = services.find(s => s.id === item.serviceId)
-        if (!service) return null
+        const therapist = therapists.find(t => t.id === item.therapistId)
+        
+        if (!service || !therapist) {
+          console.warn(`Invalid service or therapist for item ${index}`)
+          return null
+        }
 
         const treatmentData = {
           date: selectedDate,
-          customerName: item.customerName,
+          customerName: item.customerName.trim(),
           serviceId: item.serviceId,
           therapistId: item.therapistId,
           servicePrice: service.promoPrice || service.normalPrice,
-          tipAmount: item.tipAmount,
-          paymentMethod: item.paymentMethod,
-          notes: item.notes
+          tipAmount: item.tipAmount || 0,
+          paymentMethod: item.paymentMethod || 'cash',
+          notes: item.notes?.trim() || null
         }
+
+        console.log('Sending treatment data:', treatmentData)
 
         const response = await fetch('/api/treatments', {
           method: 'POST',
@@ -222,8 +241,11 @@ export default function PembukuanHarian() {
         if (response.ok) {
           const result = await response.json()
           return result.data
+        } else {
+          const errorData = await response.json()
+          console.error(`Error for item ${index}:`, errorData)
+          return null
         }
-        return null
       })
 
       const results = await Promise.all(submitPromises)
@@ -234,6 +256,8 @@ export default function PembukuanHarian() {
         setQuickAddItems([])
         setShowQuickAdd(false)
         alert(`Successfully added ${successful.length} treatments`)
+      } else {
+        alert('Failed to add any treatments. Check the console for details.')
       }
     } catch (error) {
       console.error('Error adding treatments:', error)
@@ -626,7 +650,275 @@ export default function PembukuanHarian() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Manual Add Modal */}
+        <AnimatePresence>
+          {showAddForm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              onClick={() => setShowAddForm(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+              >
+                <div className="p-6 border-b">
+                  <h3 className="text-xl font-semibold text-pink-800">Manual Add Treatment</h3>
+                  <p className="text-gray-600 text-sm mt-1">Tambah satu treatment dengan detail lengkap</p>
+                </div>
+                
+                <div className="p-6 max-h-96 overflow-y-auto">
+                  <ManualAddForm 
+                    services={services}
+                    therapists={therapists}
+                    selectedDate={selectedDate}
+                    onSuccess={() => {
+                      setShowAddForm(false)
+                      fetchData()
+                    }}
+                    onCancel={() => setShowAddForm(false)}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AdminLayout>
+  )
+}
+
+// Manual Add Form Component
+function ManualAddForm({ services, therapists, selectedDate, onSuccess, onCancel }: {
+  services: any[]
+  therapists: any[]
+  selectedDate: string
+  onSuccess: () => void
+  onCancel: () => void
+}) {
+  const [formData, setFormData] = useState({
+    customerName: '',
+    serviceId: '',
+    therapistId: '',
+    customPrice: '',
+    tipAmount: 0,
+    paymentMethod: 'cash' as 'cash' | 'transfer' | 'qris',
+    startTime: '',
+    endTime: '',
+    notes: ''
+  })
+  const [loading, setLoading] = useState(false)
+
+  const calculatePrice = () => {
+    if (formData.customPrice) return parseInt(formData.customPrice)
+    const service = services.find(s => s.id === formData.serviceId)
+    return service ? (service.promoPrice || service.normalPrice) : 0
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formData.customerName || !formData.serviceId || !formData.therapistId) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      const treatmentData = {
+        date: selectedDate,
+        customerName: formData.customerName,
+        serviceId: formData.serviceId,
+        therapistId: formData.therapistId,
+        servicePrice: calculatePrice(),
+        tipAmount: formData.tipAmount,
+        paymentMethod: formData.paymentMethod,
+        startTime: formData.startTime || null,
+        endTime: formData.endTime || null,
+        notes: formData.notes || null
+      }
+
+      const response = await fetch('/api/treatments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(treatmentData)
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          onSuccess()
+          alert('Treatment berhasil ditambahkan!')
+        } else {
+          alert('Error: ' + result.error)
+        }
+      } else {
+        const errorResult = await response.json()
+        alert('Error: ' + (errorResult.error || 'Failed to save treatment'))
+      }
+    } catch (error) {
+      console.error('Error saving treatment:', error)
+      alert('Error saving treatment')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(amount)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="salon-label">Nama Customer *</label>
+        <input
+          type="text"
+          required
+          value={formData.customerName}
+          onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
+          className="salon-input"
+          placeholder="Nama lengkap customer"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="salon-label">Service *</label>
+          <select
+            value={formData.serviceId}
+            onChange={(e) => setFormData(prev => ({ ...prev, serviceId: e.target.value }))}
+            className="salon-input"
+            required
+          >
+            <option value="">Pilih service</option>
+            {services.map(service => (
+              <option key={service.id} value={service.id}>
+                {service.name} - {formatCurrency(service.promoPrice || service.normalPrice)}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="salon-label">Therapist *</label>
+          <select
+            value={formData.therapistId}
+            onChange={(e) => setFormData(prev => ({ ...prev, therapistId: e.target.value }))}
+            className="salon-input"
+            required
+          >
+            <option value="">Pilih therapist</option>
+            {therapists.map(therapist => (
+              <option key={therapist.id} value={therapist.id}>
+                {therapist.initial} - {therapist.fullName}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="salon-label">Harga Custom (Optional)</label>
+        <input
+          type="number"
+          min="0"
+          value={formData.customPrice}
+          onChange={(e) => setFormData(prev => ({ ...prev, customPrice: e.target.value }))}
+          className="salon-input"
+          placeholder="Kosongkan untuk harga normal"
+        />
+        {formData.serviceId && (
+          <div className="mt-2 text-sm text-green-600 font-medium">
+            Harga: {formatCurrency(calculatePrice())}
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="salon-label">Tips</label>
+          <input
+            type="number"
+            min="0"
+            value={formData.tipAmount}
+            onChange={(e) => setFormData(prev => ({ ...prev, tipAmount: parseInt(e.target.value) || 0 }))}
+            className="salon-input"
+            placeholder="0"
+          />
+        </div>
+        <div>
+          <label className="salon-label">Waktu Mulai</label>
+          <input
+            type="time"
+            value={formData.startTime}
+            onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+            className="salon-input"
+          />
+        </div>
+        <div>
+          <label className="salon-label">Waktu Selesai</label>
+          <input
+            type="time"
+            value={formData.endTime}
+            onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+            className="salon-input"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="salon-label">Metode Pembayaran</label>
+        <select
+          value={formData.paymentMethod}
+          onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value as any }))}
+          className="salon-input"
+        >
+          <option value="cash">Cash</option>
+          <option value="transfer">Transfer</option>
+          <option value="qris">QRIS</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="salon-label">Catatan</label>
+        <textarea
+          rows={3}
+          value={formData.notes}
+          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+          className="salon-input"
+          placeholder="Catatan treatment..."
+        />
+      </div>
+
+      <div className="flex gap-3 pt-4 border-t">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="salon-btn-secondary flex-1"
+          disabled={loading}
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          className="salon-btn-primary flex-1"
+          disabled={loading || !formData.customerName || !formData.serviceId || !formData.therapistId}
+        >
+          {loading ? 'Menyimpan...' : 'Simpan Treatment'}
+        </button>
+      </div>
+    </form>
   )
 }

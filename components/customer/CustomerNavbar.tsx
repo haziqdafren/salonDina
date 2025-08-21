@@ -34,7 +34,7 @@ const CustomerNavbar = () => {
   }
 
   const handleWhatsAppClick = () => {
-    const whatsappUrl = "https://wa.me/6282170677736?text=Assalamu'alaikum, saya ingin bertanya tentang layanan Salon Muslimah Dina"
+    const whatsappUrl = "https://wa.me/6287869590802?text=Assalamu'alaikum, saya ingin bertanya tentang layanan Salon Muslimah Dina"
     window.open(whatsappUrl, '_blank')
   }
 

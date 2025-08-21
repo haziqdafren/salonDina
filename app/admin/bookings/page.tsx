@@ -116,6 +116,97 @@ export default function ManajemenBooking() {
     }
   }
 
+  const handleClearProcessedBookings = async () => {
+    const processedBookings = bookings.filter(booking => 
+      booking.status === 'completed' || booking.status === 'cancelled'
+    )
+    
+    if (processedBookings.length === 0) {
+      alert('No processed bookings to clear')
+      return
+    }
+
+    if (!window.confirm(`Are you sure you want to clear ${processedBookings.length} processed bookings? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      const deletePromises = processedBookings.map(booking =>
+        fetch(`/api/bookings/${booking.id}`, { method: 'DELETE' })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const successful = results.filter(result => result.ok)
+
+      if (successful.length > 0) {
+        // Refresh bookings data
+        const response = await fetch('/api/bookings')
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success) {
+            setBookings(result.data)
+          }
+        }
+        alert(`Successfully cleared ${successful.length} processed bookings`)
+      } else {
+        alert('Failed to clear any bookings. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error clearing processed bookings:', error)
+      alert('Error clearing processed bookings')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClearAllBookings = async () => {
+    if (bookings.length === 0) {
+      alert('No bookings to clear')
+      return
+    }
+
+    if (!window.confirm(`⚠️ WARNING: This will permanently delete ALL ${bookings.length} bookings!\n\nThis action cannot be undone. Are you absolutely sure?`)) {
+      return
+    }
+
+    // Double confirmation for safety
+    if (!window.confirm('This is your final confirmation. Delete ALL booking data?')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      const deletePromises = bookings.map(booking =>
+        fetch(`/api/bookings/${booking.id}`, { method: 'DELETE' })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const successful = results.filter(result => result.ok)
+
+      if (successful.length > 0) {
+        // Refresh bookings data
+        const response = await fetch('/api/bookings')
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success) {
+            setBookings(result.data)
+          }
+        }
+        alert(`Successfully cleared ${successful.length} bookings`)
+      } else {
+        alert('Failed to clear any bookings. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error clearing all bookings:', error)
+      alert('Error clearing all bookings')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const filteredBookings = bookings.filter(booking => {
     // Safe property access with fallbacks
     const customerName = booking.customerName || ''
@@ -161,6 +252,28 @@ export default function ManajemenBooking() {
           <div>
             <h1 className="text-3xl font-bold text-pink-800 mb-2">Manajemen Booking</h1>
             <p className="text-gray-600">Kelola janji temu dan reservasi pelanggan</p>
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={handleClearProcessedBookings}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              disabled={loading}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Clear Processed
+            </button>
+            <button
+              onClick={handleClearAllBookings}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              disabled={loading}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Clear All Data
+            </button>
           </div>
         </div>
 
