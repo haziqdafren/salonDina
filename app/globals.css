@@ -552,6 +552,55 @@ body {
   background: transparent;
 }
 
+/* Short Button Classes for Quick Usage */
+.salon-btn-primary {
+  @apply salon-button-primary;
+}
+
+.salon-btn-secondary {
+  @apply salon-button-secondary;
+}
+
+/* Enhanced Mobile Responsive Modals */
+.salon-modal {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4;
+}
+
+.salon-modal-content {
+  @apply bg-white rounded-2xl w-full max-h-[90vh] overflow-hidden;
+  max-width: min(90vw, 800px);
+}
+
+.salon-modal-scroll {
+  @apply max-h-96 overflow-y-auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile-First Responsive Design */
+@media (max-width: 768px) {
+  .salon-modal-content {
+    @apply max-h-[95vh] rounded-xl;
+    margin: 0.5rem;
+  }
+  
+  .salon-modal-scroll {
+    @apply max-h-80;
+  }
+  
+  .salon-btn-primary,
+  .salon-btn-secondary {
+    @apply py-3 px-6 text-sm;
+  }
+  
+  .salon-header-xl {
+    @apply text-2xl;
+  }
+  
+  .salon-input {
+    @apply py-3 px-4 text-sm;
+  }
+}
+
 /* Focus styles for accessibility */
 *:focus {
   outline: 2px solid var(--salon-primary);
