@@ -1,7 +1,34 @@
 import type { Metadata, Viewport } from 'next'
+import { Inter, Playfair_Display, Dancing_Script, Kalam } from 'next/font/google'
 import { Providers } from './providers'
 import { generateMedanMetaTags, generateLocalBusinessSchema } from '../lib/seo/medanSEO'
 import './globals.css'
+
+// Optimize font loading
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter'
+})
+
+const playfair = Playfair_Display({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-playfair'
+})
+
+const dancing = Dancing_Script({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-dancing'
+})
+
+const kalam = Kalam({ 
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['300', '400', '700'],
+  variable: '--font-kalam'
+})
 
 // Generate Medan-optimized SEO metadata
 const medanSEO = generateMedanMetaTags('home')
@@ -76,10 +103,8 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <head>
-        {/* Google Fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@400;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet" />
+        {/* Preload critical resources */}
+        <link rel="preload" href="/logo.jpeg" as="image" />
         
         <meta name="theme-color" content="#E8B4B8" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -108,7 +133,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-kalam antialiased bg-warm-cream text-deep-charcoal">
+      <body className={`${kalam.variable} ${inter.variable} ${playfair.variable} ${dancing.variable} font-kalam antialiased bg-warm-cream text-deep-charcoal`}>
         <Providers>
           {children}
         </Providers>

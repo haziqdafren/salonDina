@@ -1,10 +1,14 @@
 {
   "buildCommand": "prisma generate && next build",
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "framework": "nextjs",
   "functions": {
     "app/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 512
     }
-  }
+  },
+  "regions": ["sin1", "hnd1"],
+  "cleanUrls": true,
+  "trailingSlash": false
 }

@@ -1,22 +1,38 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Performance optimizations
+  poweredByHeader: false,
+  compress: true,
+  swcMinify: true,
+  
+  // Image optimization
   images: {
     domains: ['localhost', 'instagram.com', 'scontent.cdninstagram.com'],
     formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
-  // Optimize for production
-  poweredByHeader: false,
-  compress: true,
   
-  // Security headers
+  // Bundle optimization
+  experimental: {
+    optimizePackageImports: ['framer-motion', '@prisma/client'],
+    turbotrace: {
+      logLevel: 'error'
+    },
+  },
+  
+  // Output optimization
+  output: 'standalone',
+  
+  // Performance and security headers
   async headers() {
     return [
       {
-        // Apply these headers to all routes
         source: '/(.*)',
         headers: [
+          // Security headers
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
@@ -36,6 +52,29 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=()',
+          },
+          // Performance headers
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=300, stale-while-revalidate=60',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
