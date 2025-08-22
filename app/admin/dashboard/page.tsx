@@ -416,7 +416,7 @@ export default function AdminDashboard() {
           <div className="p-6 border-b border-pink-100">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-pink-800">Performa Therapist Hari Ini</h2>
-              <Link href="/admin/kelola-therapist" className="salon-button-secondary text-sm">
+              <Link href="/admin/kelola-therapist" className="salon-btn-secondary text-sm">
                 Kelola Therapist
               </Link>
             </div>
@@ -457,7 +457,7 @@ export default function AdminDashboard() {
           <div className="p-6 border-b border-pink-100">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-pink-800">Booking Terbaru</h2>
-              <Link href="/admin/bookings" className="salon-button-secondary text-sm">
+              <Link href="/admin/bookings" className="salon-btn-secondary text-sm">
                 Lihat Semua
               </Link>
             </div>
@@ -555,7 +555,7 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
           >
-            <Link href="/admin/bookings" className="salon-button-primary flex items-center justify-center gap-2 p-4 w-full">
+            <Link href="/admin/bookings" className="salon-btn-primary flex items-center justify-center gap-2 p-4 w-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -568,7 +568,7 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.1 }}
           >
-            <Link href="/admin/kelola-therapist" className="salon-button-secondary flex items-center justify-center gap-2 p-4 w-full">
+            <Link href="/admin/kelola-therapist" className="salon-btn-secondary flex items-center justify-center gap-2 p-4 w-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
@@ -581,7 +581,7 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2 }}
           >
-            <Link href="/admin/pembukuan-harian" className="salon-button-secondary flex items-center justify-center gap-2 p-4 w-full">
+            <Link href="/admin/pembukuan-harian" className="salon-btn-secondary flex items-center justify-center gap-2 p-4 w-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -594,7 +594,7 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.3 }}
           >
-            <Link href="/admin/pembukuan-bulanan" className="salon-button-secondary flex items-center justify-center gap-2 p-4 w-full">
+            <Link href="/admin/pembukuan-bulanan" className="salon-btn-secondary flex items-center justify-center gap-2 p-4 w-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>

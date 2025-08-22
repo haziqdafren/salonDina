@@ -256,7 +256,7 @@ export default function ManajemenBooking() {
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={handleClearProcessedBookings}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              className="salon-btn-secondary bg-orange-500 hover:bg-orange-600 border-orange-500 hover:border-orange-600 text-white flex items-center gap-2"
               disabled={loading}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,7 +266,7 @@ export default function ManajemenBooking() {
             </button>
             <button
               onClick={handleClearAllBookings}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              className="salon-btn-secondary bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600 text-white flex items-center gap-2"
               disabled={loading}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,8 +281,23 @@ export default function ManajemenBooking() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {['pending', 'confirmed', 'completed', 'cancelled'].map((status, index) => {
             const count = bookings.filter(b => b.status === status).length
-            const colors = ['yellow', 'blue', 'green', 'red']
-            const color = colors[index]
+            
+            const getStatusStyles = (status: string) => {
+              switch (status) {
+                case 'pending':
+                  return { bg: 'bg-yellow-100', text: 'text-yellow-600', icon: '⏳' }
+                case 'confirmed':
+                  return { bg: 'bg-blue-100', text: 'text-blue-600', icon: '✅' }
+                case 'completed':
+                  return { bg: 'bg-green-100', text: 'text-green-600', icon: '🎉' }
+                case 'cancelled':
+                  return { bg: 'bg-red-100', text: 'text-red-600', icon: '❌' }
+                default:
+                  return { bg: 'bg-gray-100', text: 'text-gray-600', icon: '❓' }
+              }
+            }
+            
+            const statusStyles = getStatusStyles(status)
             
             return (
               <motion.div
@@ -293,11 +308,9 @@ export default function ManajemenBooking() {
                 className="salon-card p-6"
               >
                 <div className="flex items-center gap-4">
-                  <div className={`bg-${color}-100 p-3 rounded-2xl`}>
-                    <div className={`w-6 h-6 text-${color}-600 font-bold text-lg flex items-center justify-center`}>
-                      {status === 'pending' ? '⏳' : 
-                       status === 'confirmed' ? '✅' :
-                       status === 'completed' ? '🎉' : '❌'}
+                  <div className={`${statusStyles.bg} p-3 rounded-2xl`}>
+                    <div className={`w-6 h-6 ${statusStyles.text} font-bold text-lg flex items-center justify-center`}>
+                      {statusStyles.icon}
                     </div>
                   </div>
                   <div>

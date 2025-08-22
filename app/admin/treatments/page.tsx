@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import AdminLayout from '../../../components/admin/AdminLayout'
 import Pagination, { usePagination } from '../../../components/admin/Pagination'
+import CurrencyInput from '../../../components/ui/CurrencyInput'
 
 // Service interfaces
 interface Service {
@@ -419,29 +420,21 @@ export default function LayananHarga() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Harga Normal *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
+                    <CurrencyInput
+                      label="Harga Normal *"
                       value={formData.normalPrice}
-                      onChange={(e) => setFormData({...formData, normalPrice: parseInt(e.target.value) || 0})}
-                      className="salon-input"
+                      onChange={(value) => setFormData({...formData, normalPrice: value})}
+                      placeholder="Harga normal layanan"
+                      required={true}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Harga Promo
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
+                    <CurrencyInput
+                      label="Harga Promo"
                       value={formData.promoPrice}
-                      onChange={(e) => setFormData({...formData, promoPrice: parseInt(e.target.value) || 0})}
-                      className="salon-input"
+                      onChange={(value) => setFormData({...formData, promoPrice: value})}
+                      placeholder="Harga promo (opsional)"
                     />
                   </div>
                 </div>

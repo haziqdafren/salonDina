@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import AdminLayout from '../../../../../components/admin/AdminLayout'
+import CurrencyInput from '../../../../../components/ui/CurrencyInput'
 
 interface Therapist {
   id: string
@@ -29,12 +30,12 @@ export default function EditTherapist() {
   
   const [formData, setFormData] = useState({
     initial: '',
-    namaLengkap: '',
-    nomorTelepon: '',
+    fullName: '',
+    phone: '',
     email: '',
-    status: 'active' as 'active' | 'inactive' | 'leave',
-    feePerTreatment: 0,
-    tingkatKomisi: 0,
+    isActive: true,
+    baseFeePerTreatment: 0,
+    commissionRate: 0,
     notes: ''
   })
 
@@ -55,13 +56,13 @@ export default function EditTherapist() {
           setTherapist(data)
           setFormData({
             initial: data.initial || '',
-            namaLengkap: data.namaLengkap || '',
-            nomorTelepon: data.nomorTelepon || '',
+            fullName: data.namaLengkap || '', // API returns namaLengkap but we need fullName
+            phone: data.nomorTelepon || '', // API returns nomorTelepon but we need phone
             email: data.email || '',
-            status: data.status || 'active',
-            feePerTreatment: data.feePerTreatment || 0,
-            tingkatKomisi: data.tingkatKomisi || 0,
-            notes: data.notes || ''
+            isActive: data.status === 'Aktif', // Convert status string to boolean
+            baseFeePerTreatment: data.feePerTreatment || 0,
+            commissionRate: data.tingkatKomisi || 0, // API returns as percentage
+            notes: data.catatan || ''
           })
         } else {
           console.error('Failed to fetch therapist:', result.error)
@@ -85,21 +86,33 @@ export default function EditTherapist() {
     try {
       setSaving(true)
       
+      // Prepare data in the format the backend expects
+      const submitData = {
+        initial: formData.initial,
+        fullName: formData.fullName,
+        phone: formData.phone,
+        baseFeePerTreatment: formData.baseFeePerTreatment,
+        commissionRate: formData.commissionRate, // Backend converts to decimal
+        isActive: formData.isActive
+      }
+      
       const response = await fetch(`/api/therapists/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       })
 
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
+          alert('Therapist berhasil diupdate!')
           router.push('/admin/kelola-therapist')
         } else {
           alert('Failed to update therapist: ' + result.error)
         }
       } else {
-        alert('Failed to update therapist')
+        const errorText = await response.text()
+        alert('Failed to update therapist: ' + errorText)
       }
     } catch (error) {
       console.error('Error updating therapist:', error)
@@ -185,8 +198,8 @@ export default function EditTherapist() {
                   <input
                     type="text"
                     required
-                    value={formData.namaLengkap}
-                    onChange={(e) => setFormData(prev => ({ ...prev, namaLengkap: e.target.value }))}
+                    value={formData.fullName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
                     className="salon-input"
                     placeholder="Nama lengkap therapist"
                   />
@@ -203,8 +216,8 @@ export default function EditTherapist() {
                   <input
                     type="tel"
                     required
-                    value={formData.nomorTelepon}
-                    onChange={(e) => setFormData(prev => ({ ...prev, nomorTelepon: e.target.value }))}
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     className="salon-input"
                     placeholder="+62812-xxxx-xxxx"
                   />
@@ -229,26 +242,22 @@ export default function EditTherapist() {
                 <div>
                   <label className="salon-label">Status *</label>
                   <select
-                    value={formData.status}
-                    onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                    value={formData.isActive ? 'active' : 'inactive'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.value === 'active' }))}
                     className="salon-input"
                     required
                   >
                     <option value="active">Aktif</option>
                     <option value="inactive">Tidak Aktif</option>
-                    <option value="leave">Cuti</option>
                   </select>
                 </div>
                 <div>
-                  <label className="salon-label">Fee per Treatment (Rp) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={formData.feePerTreatment}
-                    onChange={(e) => setFormData(prev => ({ ...prev, feePerTreatment: parseInt(e.target.value) || 0 }))}
-                    className="salon-input"
+                  <CurrencyInput
+                    label="Fee per Treatment *"
+                    value={formData.baseFeePerTreatment}
+                    onChange={(value) => setFormData(prev => ({ ...prev, baseFeePerTreatment: value }))}
                     placeholder="20000"
+                    required={true}
                   />
                 </div>
                 <div>
@@ -257,9 +266,10 @@ export default function EditTherapist() {
                     type="number"
                     min="0"
                     max="100"
+                    step="0.1"
                     required
-                    value={formData.tingkatKomisi}
-                    onChange={(e) => setFormData(prev => ({ ...prev, tingkatKomisi: parseInt(e.target.value) || 0 }))}
+                    value={formData.commissionRate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, commissionRate: parseFloat(e.target.value) || 0 }))}
                     className="salon-input"
                     placeholder="12"
                   />

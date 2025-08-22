@@ -78,6 +78,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: '📊',
       href: '/admin/pembukuan-bulanan',
       description: 'Analisis pendapatan bulanan',
+    },
+    {
+      id: 'feedback',
+      title: 'Manajemen Feedback',
+      icon: '💬',
+      href: '/admin/feedback',
+      description: 'Analisis kepuasan pelanggan',
     }
   ]
 
@@ -196,7 +203,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             x: sidebarOpen || window.innerWidth >= 768 ? 0 : '-100%' 
           }}
           transition={{ duration: 0.3 }}
-          className="bg-white border-r border-slate-200 shadow-lg flex-shrink-0 relative md:relative fixed md:translate-x-0 z-40 h-screen md:h-auto"
+          className="bg-white border-r border-slate-200 shadow-lg flex-shrink-0 relative md:relative fixed md:translate-x-0 z-40 h-screen md:h-auto flex flex-col"
         >
           {/* Header */}
           <div className="p-6 border-b border-slate-200">
@@ -216,7 +223,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </div>
                     <div>
                       <h1 className="font-bold text-slate-800">
-                        Salon Dina
+                        Salon Muslimah Dina
                       </h1>
                       <p className="text-xs text-slate-500">
                         Sistem Manajemen
@@ -240,7 +247,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
             {navigationItems.map((item) => (
               <Link key={item.id} href={item.href}>
                 <motion.div
@@ -293,7 +300,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </button>
 
           {/* Bottom Section */}
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="p-4 border-t border-slate-200 mt-auto">
             <motion.button
               onClick={handleLogout}
               whileHover={{ scale: 1.02 }}

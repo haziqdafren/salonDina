@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AdminLayout from '../../../components/admin/AdminLayout'
+import CurrencyInput from '../../../components/ui/CurrencyInput'
+import TreatmentCompletion from '../../../components/admin/TreatmentCompletion'
+import DataDetailModal from '../../../components/admin/DataDetailModal'
 
 // Enhanced interfaces
 interface Service {
@@ -18,10 +21,18 @@ interface Service {
 interface Therapist {
   id: string
   initial: string
-  fullName: string
-  baseFeePerTreatment: number
-  commissionRate: number
-  isActive: boolean
+  namaLengkap: string
+  nomorTelepon: string
+  tanggalBergabung: string
+  status: string
+  feePerTreatment: number
+  tingkatKomisi: number
+  todayTreatments: number
+  todayEarnings: number
+  monthlyTreatments: number
+  monthlyRevenue: number
+  monthlyTips: number
+  averageRating: number
 }
 
 interface Booking {
@@ -57,6 +68,7 @@ interface QuickAddTreatment {
   serviceId: string
   therapistId: string
   customerName: string
+  customerPhone?: string
   tipAmount: number
   paymentMethod: 'cash' | 'transfer' | 'qris'
   notes?: string
@@ -68,6 +80,7 @@ export default function PembukuanHarian() {
   const [services, setServices] = useState<Service[]>([])
   const [therapists, setTherapists] = useState<Therapist[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [feedbackStatus, setFeedbackStatus] = useState<Record<string, { hasFeedback: boolean; rating?: number; submittedAt?: string }>>({})
   const [loading, setLoading] = useState(true)
   
   // UI States
@@ -75,6 +88,13 @@ export default function PembukuanHarian() {
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [showImportBookings, setShowImportBookings] = useState(false)
   const [addMode, setAddMode] = useState<'single' | 'quick' | 'bulk'>('single')
+  const [showTreatmentCompletion, setShowTreatmentCompletion] = useState(false)
+  const [completingTreatment, setCompletingTreatment] = useState<DailyTreatment | null>(null)
+  
+  // Data Detail Modal States
+  const [showDataDetail, setShowDataDetail] = useState(false)
+  const [selectedData, setSelectedData] = useState<any>(null)
+  const [detailType, setDetailType] = useState<'treatment' | 'customer' | 'therapist' | 'booking' | 'feedback'>('treatment')
 
   // Quick Add State
   const [quickAddItems, setQuickAddItems] = useState<QuickAddTreatment[]>([])
@@ -84,6 +104,28 @@ export default function PembukuanHarian() {
   useEffect(() => {
     fetchData()
   }, [selectedDate])
+
+  // Fetch feedback status for treatments
+  const fetchFeedbackStatus = async (treatmentIds: string[]) => {
+    if (treatmentIds.length === 0) return
+
+    try {
+      const response = await fetch('/api/feedback/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ treatmentIds })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setFeedbackStatus(result.data)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching feedback status:', error)
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -97,11 +139,18 @@ export default function PembukuanHarian() {
         fetch(`/api/bookings?date=${selectedDate}&status=completed`)
       ])
 
+      let treatmentsData: DailyTreatment[] = []
+
       // Handle treatments
       if (treatmentsRes.ok) {
         const treatmentsResult = await treatmentsRes.json()
         if (treatmentsResult.success) {
-          setTreatments(treatmentsResult.data)
+          treatmentsData = treatmentsResult.data
+          setTreatments(treatmentsData)
+          
+          // Fetch feedback status for all treatments
+          const treatmentIds = treatmentsData.map(t => t.id)
+          await fetchFeedbackStatus(treatmentIds)
         }
       }
 
@@ -117,8 +166,13 @@ export default function PembukuanHarian() {
       if (therapistsRes.ok) {
         const therapistsResult = await therapistsRes.json()
         if (therapistsResult.success) {
-          setTherapists(therapistsResult.data.filter((t: Therapist) => t.isActive))
+          console.log('Therapists data:', therapistsResult.data)
+          setTherapists(therapistsResult.data.filter((t: Therapist) => t.status === 'Aktif'))
+        } else {
+          console.error('Therapists API error:', therapistsResult.error)
         }
+      } else {
+        console.error('Therapists API request failed:', therapistsRes.status)
       }
 
       // Handle bookings
@@ -222,6 +276,7 @@ export default function PembukuanHarian() {
         const treatmentData = {
           date: selectedDate,
           customerName: item.customerName.trim(),
+          phone: item.customerPhone?.trim() || null,
           serviceId: item.serviceId,
           therapistId: item.therapistId,
           servicePrice: service.promoPrice || service.normalPrice,
@@ -271,6 +326,7 @@ export default function PembukuanHarian() {
       serviceId: '',
       therapistId: '',
       customerName: '',
+      customerPhone: '',
       tipAmount: 0,
       paymentMethod: 'cash',
       notes: ''
@@ -310,6 +366,59 @@ export default function PembukuanHarian() {
   const filteredTreatments = treatments.filter(treatment => 
     new Date(treatment.date).toDateString() === new Date(selectedDate).toDateString()
   )
+
+  // Handle treatment completion with feedback
+  const handleTreatmentCompletion = (treatment: DailyTreatment) => {
+    setCompletingTreatment({
+      ...treatment,
+      therapistName: treatment.therapistName,
+      therapistId: treatment.therapistInitial // Use initial as ID for now
+    })
+    setShowTreatmentCompletion(true)
+  }
+
+  const handleCompletionSubmit = async (completionData: any) => {
+    try {
+      // Update treatment with completion data
+      console.log('Treatment completed with data:', completionData)
+      
+      // Save treatment completion data here (API call would go here)
+      // For now, we'll just log the data
+      // In a real implementation, you would save to database here
+      
+      // Don't close the modal - let the TreatmentCompletion component handle feedback
+      // The TreatmentCompletion component will show feedback modal and close itself
+      
+      // Return success to indicate completion was successful
+      return true
+    } catch (error) {
+      console.error('Error completing treatment:', error)
+      setShowTreatmentCompletion(false)
+      setCompletingTreatment(null)
+      return false
+    }
+  }
+
+  const handleTreatmentCompletionClose = () => {
+    setShowTreatmentCompletion(false)
+    setCompletingTreatment(null)
+    // Refresh data when modal closes
+    // Use setTimeout to avoid immediate re-render issues
+    setTimeout(() => {
+      fetchData()
+    }, 100)
+  }
+
+  const handleRowClick = (treatment: DailyTreatment) => {
+    setSelectedData(treatment)
+    setDetailType('treatment')
+    setShowDataDetail(true)
+  }
+
+  const handleDataDetailClose = () => {
+    setShowDataDetail(false)
+    setSelectedData(null)
+  }
 
   // Calculate daily stats
   const dailyStats = {
@@ -416,11 +525,16 @@ export default function PembukuanHarian() {
                   <th className="text-left py-3 px-4 font-semibold text-pink-800">Price</th>
                   <th className="text-left py-3 px-4 font-semibold text-pink-800">Tips</th>
                   <th className="text-left py-3 px-4 font-semibold text-pink-800">Payment</th>
+                  <th className="text-left py-3 px-4 font-semibold text-pink-800">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTreatments.map((treatment) => (
-                  <tr key={treatment.id} className="border-t border-pink-100 hover:bg-pink-25">
+                  <tr 
+                    key={treatment.id} 
+                    className="border-t border-pink-100 hover:bg-pink-25 cursor-pointer transition-colors"
+                    onClick={() => handleRowClick(treatment)}
+                  >
                     <td className="py-3 px-4 font-medium">{treatment.customerName}</td>
                     <td className="py-3 px-4">{treatment.serviceName}</td>
                     <td className="py-3 px-4">
@@ -441,6 +555,37 @@ export default function PembukuanHarian() {
                       }`}>
                         {treatment.paymentMethod.toUpperCase()}
                       </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      {(() => {
+                        const feedback = feedbackStatus[treatment.id]
+                        const hasFeedback = feedback?.hasFeedback
+                        
+                        if (hasFeedback) {
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                ✅ Selesai
+                                {feedback.rating && (
+                                  <span className="text-yellow-600">⭐{feedback.rating}</span>
+                                )}
+                              </span>
+                            </div>
+                          )
+                        }
+                        
+                        return (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleTreatmentCompletion(treatment)
+                            }}
+                            className="salon-btn-primary text-xs px-2 py-1 hover:bg-pink-600 transition-colors"
+                          >
+                            💬 Feedback
+                          </button>
+                        )
+                      })()}
                     </td>
                   </tr>
                 ))}
@@ -591,20 +736,24 @@ export default function PembukuanHarian() {
                           onChange={(e) => updateQuickAddItem(index, 'therapistId', e.target.value)}
                           className="salon-input text-sm"
                         >
-                          <option value="">Therapist</option>
-                          {therapists.map(therapist => (
+                          <option value="">Pilih Therapist</option>
+                          {therapists.length > 0 ? therapists.map(therapist => (
                             <option key={therapist.id} value={therapist.id}>
-                              {therapist.initial} - {therapist.fullName}
+                              {therapist.initial} - {therapist.namaLengkap}
                             </option>
-                          ))}
+                          )) : (
+                            <option disabled>Memuat therapist...</option>
+                          )}
                         </select>
-                        <input
-                          type="number"
-                          placeholder="Tips"
-                          value={item.tipAmount}
-                          onChange={(e) => updateQuickAddItem(index, 'tipAmount', parseInt(e.target.value) || 0)}
-                          className="salon-input text-sm"
-                        />
+                        <div>
+                          <CurrencyInput
+                            label=""
+                            value={item.tipAmount}
+                            onChange={(value) => updateQuickAddItem(index, 'tipAmount', value)}
+                            placeholder="Tips"
+                            className="text-sm"
+                          />
+                        </div>
                         <select
                           value={item.paymentMethod}
                           onChange={(e) => updateQuickAddItem(index, 'paymentMethod', e.target.value)}
@@ -625,7 +774,7 @@ export default function PembukuanHarian() {
                     
                     {quickAddItems.length === 0 && (
                       <div className="text-center py-8">
-                        <p className="text-gray-500">Click "Add Row" to start adding treatments</p>
+                        <p className="text-gray-500">Klik &ldquo;Tambah Baris&rdquo; untuk mulai menambahkan treatment</p>
                       </div>
                     )}
                   </div>
@@ -689,6 +838,70 @@ export default function PembukuanHarian() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Treatment Completion with Feedback Modal */}
+        <AnimatePresence>
+          {showTreatmentCompletion && completingTreatment && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={handleTreatmentCompletionClose}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+              >
+                <div className="p-6 border-b border-pink-100">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-xl font-semibold text-pink-800">🎉 Complete Treatment &amp; Collect Feedback</h3>
+                      <p className="text-gray-600 text-sm mt-1">Professional feedback collection system</p>
+                    </div>
+                    <button
+                      onClick={handleTreatmentCompletionClose}
+                      className="p-2 hover:bg-pink-50 rounded-lg"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="p-6 max-h-96 overflow-y-auto">
+                  <TreatmentCompletion
+                    treatment={{
+                      id: completingTreatment.id,
+                      customerName: completingTreatment.customerName,
+                      serviceName: completingTreatment.serviceName,
+                      servicePrice: completingTreatment.servicePrice,
+                      therapistName: completingTreatment.therapistName,
+                      therapistId: completingTreatment.therapistInitial,
+                      date: completingTreatment.date,
+                      startTime: completingTreatment.startTime
+                    }}
+                    onComplete={handleCompletionSubmit}
+                    onCancel={handleTreatmentCompletionClose}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Data Detail Modal */}
+        <DataDetailModal
+          isOpen={showDataDetail}
+          onClose={handleDataDetailClose}
+          data={selectedData}
+          title="Detail Treatment"
+          type={detailType}
+        />
       </div>
     </AdminLayout>
   )
@@ -706,7 +919,7 @@ function ManualAddForm({ services, therapists, selectedDate, onSuccess, onCancel
     customerName: '',
     serviceId: '',
     therapistId: '',
-    customPrice: '',
+    customPrice: 0,
     tipAmount: 0,
     paymentMethod: 'cash' as 'cash' | 'transfer' | 'qris',
     startTime: '',
@@ -716,7 +929,7 @@ function ManualAddForm({ services, therapists, selectedDate, onSuccess, onCancel
   const [loading, setLoading] = useState(false)
 
   const calculatePrice = () => {
-    if (formData.customPrice) return parseInt(formData.customPrice)
+    if (formData.customPrice > 0) return formData.customPrice
     const service = services.find(s => s.id === formData.serviceId)
     return service ? (service.promoPrice || service.normalPrice) : 0
   }
@@ -822,7 +1035,7 @@ function ManualAddForm({ services, therapists, selectedDate, onSuccess, onCancel
             <option value="">Pilih therapist</option>
             {therapists.map(therapist => (
               <option key={therapist.id} value={therapist.id}>
-                {therapist.initial} - {therapist.fullName}
+                {therapist.initial} - {therapist.namaLengkap}
               </option>
             ))}
           </select>
@@ -830,31 +1043,25 @@ function ManualAddForm({ services, therapists, selectedDate, onSuccess, onCancel
       </div>
 
       <div>
-        <label className="salon-label">Harga Custom (Optional)</label>
-        <input
-          type="number"
-          min="0"
+        <CurrencyInput
+          label="Harga Custom (Optional)"
           value={formData.customPrice}
-          onChange={(e) => setFormData(prev => ({ ...prev, customPrice: e.target.value }))}
-          className="salon-input"
+          onChange={(value) => setFormData(prev => ({ ...prev, customPrice: value }))}
           placeholder="Kosongkan untuk harga normal"
         />
         {formData.serviceId && (
           <div className="mt-2 text-sm text-green-600 font-medium">
-            Harga: {formatCurrency(calculatePrice())}
+            Harga yang akan digunakan: {formatCurrency(calculatePrice())}
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="salon-label">Tips</label>
-          <input
-            type="number"
-            min="0"
+          <CurrencyInput
+            label="Tips"
             value={formData.tipAmount}
-            onChange={(e) => setFormData(prev => ({ ...prev, tipAmount: parseInt(e.target.value) || 0 }))}
-            className="salon-input"
+            onChange={(value) => setFormData(prev => ({ ...prev, tipAmount: value }))}
             placeholder="0"
           />
         </div>

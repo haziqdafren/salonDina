@@ -601,7 +601,7 @@ export default function PembukuanHarian() {
                     
                     {quickAddItems.length === 0 && (
                       <div className="text-center py-8">
-                        <p className="text-gray-500">Click "Add Row" to start adding treatments</p>
+                        <p className="text-gray-500">Click &ldquo;Add Row&rdquo; to start adding treatments</p>
                       </div>
                     )}
                   </div>
