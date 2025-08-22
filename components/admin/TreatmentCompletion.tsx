@@ -49,14 +49,10 @@ const TreatmentCompletion: React.FC<TreatmentCompletionProps> = ({
   const handleComplete = async () => {
     try {
       setLoading(true)
-      const success = await onComplete(completionData)
+      await onComplete(completionData)
       
-      if (success) {
-        // Show feedback modal after successful completion
-        setShowFeedbackModal(true)
-      } else {
-        alert('Gagal menyelesaikan treatment. Silakan coba lagi.')
-      }
+      // Show feedback modal after successful completion
+      setShowFeedbackModal(true)
     } catch (error) {
       console.error('Error completing treatment:', error)
       alert('Gagal menyelesaikan treatment. Silakan coba lagi.')

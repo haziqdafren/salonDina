@@ -108,8 +108,8 @@ export const getPromoTreatments = (treatments: Treatment[]): Treatment[] => {
   return treatments
     .filter(treatment => treatment.isActive && treatment.promoPrice !== null)
     .sort((a, b) => {
-      const discountA = treatment.normalPrice - (treatment.promoPrice || 0)
-      const discountB = treatment.normalPrice - (treatment.promoPrice || 0)
+      const discountA = a.normalPrice - (a.promoPrice || 0)
+      const discountB = b.normalPrice - (b.promoPrice || 0)
       return discountB - discountA
     })
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { showNotification } from '../../../components/ui/NotificationToast'
 
@@ -23,7 +24,9 @@ interface FeedbackData {
   wouldRecommend: boolean
 }
 
-export default function PublicFeedbackPage({ params }: { params: { treatmentId: string } }) {
+export default function PublicFeedbackPage() {
+  const params = useParams()
+  const treatmentId = params.treatmentId as string
   const [treatment, setTreatment] = useState<TreatmentInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -49,12 +52,12 @@ export default function PublicFeedbackPage({ params }: { params: { treatmentId: 
 
   useEffect(() => {
     fetchTreatmentInfo()
-  }, [params.treatmentId])
+  }, [treatmentId])
 
   const fetchTreatmentInfo = async () => {
     try {
       // Get treatment info from API
-      const response = await fetch(`/api/treatments/${params.treatmentId}`)
+      const response = await fetch(`/api/treatments/${treatmentId}`)
       const result = await response.json()
       
       if (result.success) {
@@ -144,7 +147,7 @@ export default function PublicFeedbackPage({ params }: { params: { treatmentId: 
         whileTap={{ scale: 0.9 }}
         onClick={() => handleRatingChange(category, i + 1)}
         className={`text-3xl transition-all duration-200 ${
-          feedback[category] > i
+          (feedback[category] as number) > i
             ? 'text-yellow-400 drop-shadow-sm'
             : 'text-gray-300 hover:text-yellow-200'
         }`}

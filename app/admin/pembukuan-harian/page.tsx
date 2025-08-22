@@ -369,11 +369,7 @@ export default function PembukuanHarian() {
 
   // Handle treatment completion with feedback
   const handleTreatmentCompletion = (treatment: DailyTreatment) => {
-    setCompletingTreatment({
-      ...treatment,
-      therapistName: treatment.therapistName,
-      therapistId: treatment.therapistInitial // Use initial as ID for now
-    })
+    setCompletingTreatment(treatment)
     setShowTreatmentCompletion(true)
   }
 
@@ -389,13 +385,11 @@ export default function PembukuanHarian() {
       // Don't close the modal - let the TreatmentCompletion component handle feedback
       // The TreatmentCompletion component will show feedback modal and close itself
       
-      // Return success to indicate completion was successful
-      return true
+      // Success - no return needed
     } catch (error) {
       console.error('Error completing treatment:', error)
       setShowTreatmentCompletion(false)
       setCompletingTreatment(null)
-      return false
     }
   }
 
