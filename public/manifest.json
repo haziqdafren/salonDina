@@ -1,6 +1,6 @@
 {
   "name": "Salon Muslimah Dina",
-  "short_name": "Salon Dina",
+  "short_name": "Salon Dina", 
   "description": "Sistem Manajemen Salon Muslimah Dina",
   "start_url": "/",
   "display": "standalone",
