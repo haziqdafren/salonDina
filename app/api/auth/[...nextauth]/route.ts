@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { supabase, isSupabaseConfigured } from '../../../../lib/supabase'
 import bcrypt from 'bcryptjs'
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       id: 'credentials',
