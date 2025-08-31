@@ -17,6 +17,23 @@ export default async function handler(
   }
 
   try {
+    // Auto-create admin user if none exists
+    const userCount = await prisma.user.count()
+    if (userCount === 0) {
+      const bcrypt = require('bcryptjs')
+      const hashedPassword = await bcrypt.hash('admin123', 12)
+      await prisma.user.create({
+        data: {
+          id: 'admin-user-id',
+          username: 'admin',
+          email: 'admin@salondina.com',
+          password: hashedPassword,
+          role: 'admin',
+          isActive: true
+        }
+      })
+    }
+
     const today = new Date()
     const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
     const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000)
