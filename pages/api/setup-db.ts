@@ -31,6 +31,7 @@ const therapistsData = [
   { name: 'Aisyah Rahma', specialization: 'facial', phoneNumber: '081234567893', isActive: true },
 ]
 
+// Database setup API for Supabase
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
