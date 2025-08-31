@@ -1,11 +1,25 @@
 // Dashboard Analytics API - Real-time business insights
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma, isDatabaseAvailable } from '../../../lib/prisma'
 
 // GET /api/dashboard - Get comprehensive dashboard data
 export async function GET(request: NextRequest) {
+  // Check if database is available
+  if (!isDatabaseAvailable() || !prisma) {
+    return NextResponse.json({
+      success: false,
+      error: 'Database not configured yet',
+      data: {
+        todayStats: { treatments: 0, revenue: 0, customers: 0 },
+        weeklyStats: { treatments: 0, revenue: 0, customers: 0 },
+        monthlyStats: { treatments: 0, revenue: 0, customers: 0 },
+        recentTreatments: [],
+        popularServices: [],
+        therapistStats: [],
+        feedbackStats: { averageRating: 0, totalFeedback: 0, recentFeedback: [] }
+      }
+    })
+  }
   try {
     const today = new Date()
     const yesterday = new Date(today)
@@ -28,7 +42,7 @@ export async function GET(request: NextRequest) {
     const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999)
 
     // Get today's treatments and revenue
-    const todayTreatments = await prisma.dailyTreatment.findMany({
+    const todayTreatments = await prisma!.dailyTreatment.findMany({
       where: {
         date: { gte: startOfToday, lte: endOfToday }
       },
@@ -40,34 +54,34 @@ export async function GET(request: NextRequest) {
     })
 
     // Get yesterday's treatments for comparison
-    const yesterdayTreatments = await prisma.dailyTreatment.findMany({
+    const yesterdayTreatments = await prisma!.dailyTreatment.findMany({
       where: {
         date: { gte: startOfYesterday, lte: endOfYesterday }
       }
     })
 
     // Get today's bookings
-    const todayBookings = await prisma.booking.findMany({
+    const todayBookings = await prisma!.booking.findMany({
       where: {
         date: { gte: startOfToday, lte: endOfToday }
       }
     })
 
     // Get new customers this month
-    const newCustomersThisMonth = await prisma.customer.findMany({
+    const newCustomersThisMonth = await prisma!.customer.findMany({
       where: {
         createdAt: { gte: startOfMonth, lte: endOfMonth }
       }
     })
 
-    const newCustomersToday = await prisma.customer.findMany({
+    const newCustomersToday = await prisma!.customer.findMany({
       where: {
         createdAt: { gte: startOfToday, lte: endOfToday }
       }
     })
 
     // Get active therapists with today's performance
-    const activeTherapists = await prisma.therapist.findMany({
+    const activeTherapists = await prisma!.therapist.findMany({
       where: { isActive: true },
       include: {
         dailyTreatments: {
@@ -79,7 +93,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Get popular treatments
-    const popularTreatments = await prisma.dailyTreatment.groupBy({
+    const popularTreatments = await prisma!.dailyTreatment.groupBy({
       by: ['serviceName'],
       where: {
         date: { gte: startOfMonth, lte: endOfMonth }
@@ -101,7 +115,7 @@ export async function GET(request: NextRequest) {
     const todayTips = todayTreatments.reduce((sum, t) => sum + t.tipAmount, 0)
 
     // Get recent bookings for display
-    const recentBookings = await prisma.booking.findMany({
+    const recentBookings = await prisma!.booking.findMany({
       orderBy: { createdAt: 'desc' },
       take: 10,
       include: {
@@ -127,14 +141,14 @@ export async function GET(request: NextRequest) {
     })
 
     // Get monthly statistics
-    const monthlyTreatments = await prisma.dailyTreatment.findMany({
+    const monthlyTreatments = await prisma!.dailyTreatment.findMany({
       where: {
         date: { gte: startOfMonth, lte: endOfMonth }
       }
     })
 
     const monthlyRevenue = monthlyTreatments.reduce((sum, t) => sum + t.servicePrice, 0)
-    const monthlyTherapistFees = await prisma.monthlyBookkeeping.aggregate({
+    const monthlyTherapistFees = await prisma!.monthlyBookkeeping.aggregate({
       where: {
         date: { gte: startOfMonth, lte: endOfMonth }
       },
@@ -229,7 +243,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get treatments for the period
-    const treatments = await prisma.dailyTreatment.findMany({
+    const treatments = await prisma!.dailyTreatment.findMany({
       where: {
         date: { gte: startDate, lte: endDate }
       },
@@ -241,7 +255,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Get bookings for the period
-    const bookings = await prisma.booking.findMany({
+    const bookings = await prisma!.booking.findMany({
       where: {
         date: { gte: startDate, lte: endDate }
       }

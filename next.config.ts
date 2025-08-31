@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
   // Performance optimizations
   poweredByHeader: false,
   compress: true,
-  swcMinify: true,
   
   // Image optimization
   images: {
@@ -18,13 +17,7 @@ const nextConfig: NextConfig = {
   // Bundle optimization
   experimental: {
     optimizePackageImports: ['framer-motion', '@prisma/client'],
-    turbotrace: {
-      logLevel: 'error'
-    },
   },
-  
-  // Output optimization
-  output: 'standalone',
   
   // Performance and security headers
   async headers() {

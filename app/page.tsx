@@ -8,11 +8,28 @@ import BookingSystem from '../components/customer/BookingSystem'
 import PrayerTimeWidget from '../components/customer/PrayerTimeWidget'
 import WhatsAppFloat from '../components/customer/WhatsAppFloat'
 import CustomerNavbar from '../components/customer/CustomerNavbar'
+import DatabaseNotConnected from '../components/DatabaseNotConnected'
 
 export default function Homepage() {
   const [clickCount, setClickCount] = useState(0)
+  const [databaseAvailable, setDatabaseAvailable] = useState(true)
   const router = useRouter()
   const whatsappNumber = "+6282170677736"
+
+  // Check database availability
+  useEffect(() => {
+    const checkDatabase = async () => {
+      try {
+        const response = await fetch('/api/health')
+        const data = await response.json()
+        setDatabaseAvailable(data.database)
+      } catch (error) {
+        console.log('Database check failed:', error)
+        setDatabaseAvailable(false)
+      }
+    }
+    checkDatabase()
+  }, [])
   const whatsappMessage = "Assalamu'alaikum, saya ingin booking dan bertanya tentang layanan Salon Muslimah Dina di Medan. Apakah masih ada slot hari ini?"
 
   // Logo click handler for admin access
@@ -42,6 +59,11 @@ export default function Homepage() {
 
   const handleInstagramClick = () => {
     window.open('https://instagram.com/dina_salon_muslimah', '_blank')
+  }
+
+  // Show database connection screen if database is not available
+  if (!databaseAvailable) {
+    return <DatabaseNotConnected />
   }
 
   return (

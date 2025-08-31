@@ -1,5 +1,5 @@
 import { MonthlyBookkeeping, DailyTreatment } from '@prisma/client'
-import { prisma } from './prisma'
+import { prisma, isDatabaseAvailable } from './prisma'
 import { calculateDailyTherapistFees } from './therapist'
 
 // Daily bookkeeping entry interface
@@ -18,13 +18,17 @@ export interface DailyBookkeepingEntry {
 
 // Calculate daily revenue from treatments
 export const calculateDailyRevenue = async (date: Date): Promise<number> => {
+  if (!isDatabaseAvailable() || !prisma) {
+    return 0
+  }
+  
   const startOfDay = new Date(date)
   startOfDay.setHours(0, 0, 0, 0)
   
   const endOfDay = new Date(date)
   endOfDay.setHours(23, 59, 59, 999)
 
-  const treatments = await prisma.dailyTreatment.findMany({
+  const treatments = await prisma!.dailyTreatment.findMany({
     where: {
       date: {
         gte: startOfDay,
@@ -40,6 +44,10 @@ export const calculateDailyRevenue = async (date: Date): Promise<number> => {
 export const createOrUpdateDailyEntry = async (
   entry: Omit<DailyBookkeepingEntry, 'totalExpense' | 'netIncome' | 'runningTotal'>
 ): Promise<MonthlyBookkeeping> => {
+  if (!isDatabaseAvailable() || !prisma) {
+    throw new Error('Database not available')
+  }
+  
   const { date, dailyRevenue, operationalCost, salaryExpense, therapistFee, otherExpenses, notes } = entry
 
   // Calculate totals
@@ -50,7 +58,7 @@ export const createOrUpdateDailyEntry = async (
   const previousDay = new Date(date)
   previousDay.setDate(previousDay.getDate() - 1)
   
-  const previousEntry = await prisma.monthlyBookkeeping.findFirst({
+  const previousEntry = await prisma!.monthlyBookkeeping.findFirst({
     where: {
       date: {
         lt: date
@@ -62,7 +70,7 @@ export const createOrUpdateDailyEntry = async (
   const runningTotal = (previousEntry?.runningTotal || 0) + netIncome
 
   // Upsert the entry
-  const bookkeepingEntry = await prisma.monthlyBookkeeping.upsert({
+  const bookkeepingEntry = await prisma!.monthlyBookkeeping.upsert({
     where: { date },
     update: {
       dailyRevenue,
@@ -97,7 +105,7 @@ export const createOrUpdateDailyEntry = async (
 
 // Update running totals for all entries after the given date
 const updateSubsequentRunningTotals = async (fromDate: Date) => {
-  const subsequentEntries = await prisma.monthlyBookkeeping.findMany({
+  const subsequentEntries = await prisma!.monthlyBookkeeping.findMany({
     where: {
       date: {
         gt: fromDate
@@ -109,7 +117,7 @@ const updateSubsequentRunningTotals = async (fromDate: Date) => {
   let cumulativeTotal = 0
   
   // Get the running total up to fromDate
-  const baseEntry = await prisma.monthlyBookkeeping.findUnique({
+  const baseEntry = await prisma!.monthlyBookkeeping.findUnique({
     where: { date: fromDate }
   })
   
@@ -121,7 +129,7 @@ const updateSubsequentRunningTotals = async (fromDate: Date) => {
   for (const entry of subsequentEntries) {
     cumulativeTotal += entry.netIncome
     
-    await prisma.monthlyBookkeeping.update({
+    await prisma!.monthlyBookkeeping.update({
       where: { id: entry.id },
       data: { runningTotal: cumulativeTotal }
     })
@@ -130,10 +138,11 @@ const updateSubsequentRunningTotals = async (fromDate: Date) => {
 
 // Get monthly bookkeeping summary
 export const getMonthlyBookkeeping = async (month: number, year: number) => {
+  if (!isDatabaseAvailable() || !prisma) { throw new Error("Database not available") }
   const startOfMonth = new Date(year, month - 1, 1)
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999)
 
-  const entries = await prisma.monthlyBookkeeping.findMany({
+  const entries = await prisma!.monthlyBookkeeping.findMany({
     where: {
       date: {
         gte: startOfMonth,
@@ -201,7 +210,7 @@ export const autoCalculateDailyEntry = async (
 
 // Get bookkeeping analytics
 export const getBookkeepingAnalytics = async (startDate: Date, endDate: Date) => {
-  const entries = await prisma.monthlyBookkeeping.findMany({
+  const entries = await prisma!.monthlyBookkeeping.findMany({
     where: {
       date: {
         gte: startDate,
@@ -255,7 +264,7 @@ export const getCurrentMonthRunningTotal = async (): Promise<number> => {
   const currentMonth = today.getMonth() + 1
   const currentYear = today.getFullYear()
 
-  const latestEntry = await prisma.monthlyBookkeeping.findFirst({
+  const latestEntry = await prisma!.monthlyBookkeeping.findFirst({
     where: {
       date: {
         gte: new Date(currentYear, currentMonth - 1, 1),
