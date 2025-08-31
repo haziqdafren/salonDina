@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { formatRupiah } from '@/lib/therapist'
+import { formatRupiah } from '@/lib/utils'
 
 interface DashboardStats {
   todayTreatments: number
