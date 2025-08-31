@@ -74,7 +74,7 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  manifest: '/manifest.json',
+  // manifest: '/manifest.json', // Temporarily disabled due to deployment issues
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon-16x16.png',
