@@ -104,13 +104,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         <AnimatePresence>
           {notifications.map((notification) => {
             const styles = getNotificationStyles(notification.type)
-            
-            return (
-              <motion.div
+
+  return (
+    <motion.div
                 key={notification.id}
-                initial={{ opacity: 0, x: 300, scale: 0.8 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: 300, scale: 0.8 }}
+      initial={{ opacity: 0, x: 300, scale: 0.8 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 300, scale: 0.8 }}
                 transition={{ 
                   type: "spring", 
                   stiffness: 300, 
@@ -119,8 +119,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 }}
                 className={`${styles.bg} text-white rounded-xl shadow-2xl border ${styles.border} w-80 max-w-[calc(100vw-2rem)] overflow-hidden`}
               >
-                <div className="p-4">
-                  <div className="flex items-start gap-3">
+      <div className="p-4">
+        <div className="flex items-start gap-3">
                     <div className={`${styles.iconBg} rounded-full p-2 flex-shrink-0`}>
                       <span className="text-lg">{styles.icon}</span>
                     </div>
@@ -128,16 +128,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-sm mb-1">{notification.title}</h4>
                       <p className="text-sm opacity-90 leading-relaxed">{notification.message}</p>
-                    </div>
-                    
-                    <button
+          </div>
+          
+          <button
                       onClick={() => removeNotification(notification.id)}
                       className="text-white/70 hover:text-white text-lg transition-colors flex-shrink-0"
-                    >
+          >
                       ×
-                    </button>
-                  </div>
-                </div>
+          </button>
+        </div>
+      </div>
                 
                 {/* Progress bar */}
                 {notification.duration !== 0 && (
@@ -151,7 +151,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     className="h-1 bg-white/20"
                   />
                 )}
-              </motion.div>
+    </motion.div>
             )
           })}
         </AnimatePresence>

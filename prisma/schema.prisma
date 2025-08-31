@@ -140,6 +140,10 @@ model DailyTreatment {
   endTime      String?
   notes        String?
   
+  // Feedback tracking
+  feedbackRequested Boolean @default(false)
+  feedbackCompleted Boolean @default(false)
+  
   // Relations
   customer     Customer? @relation(fields: [customerId], references: [id])
   service      Service   @relation(fields: [serviceId], references: [id])

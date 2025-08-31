@@ -209,6 +209,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Mark treatment as feedback completed
+    await prisma.dailyTreatment.update({
+      where: { id: dailyTreatmentId },
+      data: { 
+        feedbackCompleted: true,
+        feedbackRequested: true
+      }
+    })
+
     // Update therapist average rating
     const therapistFeedback = await prisma.customerFeedback.findMany({
       where: {

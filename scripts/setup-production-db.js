@@ -1,176 +1,140 @@
 #!/usr/bin/env node
 
 /**
- * Production Database Setup Script
- * Sets up the database schema and initial data for Vercel deployment
+ * Production Database Setup Script for Salon Dina
+ * 
+ * This script helps you set up your Neon database on Vercel
+ * 
+ * Usage:
+ * 1. Make sure your Vercel app is deployed
+ * 2. Run: node scripts/setup-production-db.js YOUR_VERCEL_URL
+ * 
+ * Example:
+ * node scripts/setup-production-db.js https://salon-dina-iota.vercel.app
  */
 
-const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcryptjs')
+const https = require('https')
+const http = require('http')
 
-async function setupProductionDatabase() {
-  const prisma = new PrismaClient()
-  
-  try {
-    console.log('🚀 Setting up production database...')
+const baseUrl = process.argv[2]
+
+if (!baseUrl) {
+  console.log('❌ Please provide your Vercel app URL')
+  console.log('Usage: node scripts/setup-production-db.js https://your-app.vercel.app')
+  process.exit(1)
+}
+
+console.log('🚀 Setting up production database...')
+console.log(`📍 Target: ${baseUrl}`)
+
+// Helper function to make HTTP requests
+function makeRequest(url, data = null) {
+  return new Promise((resolve, reject) => {
+    const isHttps = url.startsWith('https')
+    const lib = isHttps ? https : http
     
-    // Test connection
-    await prisma.$connect()
-    console.log('✅ Database connection successful')
+    const options = {
+      method: data ? 'POST' : 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    }
     
-    // Check if tables exist
-    const tables = await prisma.$queryRaw`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-    `
-    
-    console.log(`📊 Found ${tables.length} existing tables`)
-    
-    // Create admin user if doesn't exist
-    const existingAdmin = await prisma.admin.findFirst()
-    
-    if (!existingAdmin) {
-      console.log('👤 Creating admin user...')
-      const hashedPassword = await bcrypt.hash('admin123', 12)
-      
-      await prisma.admin.create({
-        data: {
-          username: 'admin',
-          password: hashedPassword,
-          name: 'Administrator',
+    const req = lib.request(url, options, (res) => {
+      let body = ''
+      res.on('data', (chunk) => body += chunk)
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(body)
+          resolve({ status: res.statusCode, data: result })
+        } catch (error) {
+          resolve({ status: res.statusCode, data: body })
         }
       })
-      
-      console.log('✅ Admin user created')
-    } else {
-      console.log('👤 Admin user already exists')
+    })
+    
+    req.on('error', reject)
+    
+    if (data) {
+      req.write(JSON.stringify(data))
     }
     
-    // Create initial service categories if none exist
-    const existingServices = await prisma.service.count()
+    req.end()
+  })
+}
+
+async function setupDatabase() {
+  try {
+    // Step 1: Test connection
+    console.log('\n📡 Testing connection...')
+    const testResponse = await makeRequest(`${baseUrl}/api/database/stats`)
     
-    if (existingServices === 0) {
-      console.log('💆‍♀️ Creating initial services...')
+    if (testResponse.status !== 200) {
+      console.log('❌ Cannot connect to your app. Make sure it\'s deployed and accessible.')
+      console.log('Response:', testResponse.data)
+      return
+    }
+    
+    console.log('✅ Connection successful!')
+    
+    // Step 2: Force database migration
+    console.log('\n🔧 Running database migration...')
+    const migrateResponse = await makeRequest(`${baseUrl}/api/database/migrate`, {
+      authorization: 'force-migrate-salon-2024'
+    })
+    
+    if (migrateResponse.status !== 200) {
+      console.log('❌ Migration failed:', migrateResponse.data)
+      return
+    }
+    
+    console.log('✅ Migration completed!')
+    console.log('📊 Tables found:', migrateResponse.data.data?.tableCount || 'Unknown')
+    
+    // Step 3: Populate database with sample data
+    console.log('\n📥 Populating database with sample data...')
+    const populateResponse = await makeRequest(`${baseUrl}/api/database/populate`, {
+      authorization: 'populate-salon-database-2024',
+      forceOverwrite: false
+    })
+    
+    if (populateResponse.status !== 200) {
+      console.log('❌ Population failed:', populateResponse.data)
+      return
+    }
+    
+    console.log('✅ Database populated successfully!')
+    
+    // Step 4: Get final stats
+    console.log('\n📈 Getting final database stats...')
+    const finalStats = await makeRequest(`${baseUrl}/api/database/stats`)
+    
+    if (finalStats.status === 200 && finalStats.data.success) {
+      const stats = finalStats.data.stats
+      console.log('\n🎉 DATABASE SETUP COMPLETE!')
+      console.log('═══════════════════════════════════')
+      console.log(`📊 Total Tables: ${stats.tables}`)
+      console.log(`📋 Total Records: ${stats.totalRecords}`)
+      console.log(`👤 Admins: ${stats.counts.admins}`)
+      console.log(`👩‍⚕️ Therapists: ${stats.counts.therapists}`)
+      console.log(`💆‍♀️ Services: ${stats.counts.services}`)
+      console.log(`📅 Bookings: ${stats.counts.bookings}`)
+      console.log(`💬 Feedback: ${stats.counts.feedback}`)
+      console.log('═══════════════════════════════════')
       
-      const initialServices = [
-        {
-          name: 'Facial Brightening',
-          category: 'Perawatan Wajah',
-          normalPrice: 150000,
-          promoPrice: 125000,
-          duration: 60,
-          description: 'Perawatan wajah untuk mencerahkan kulit',
-          isActive: true
-        },
-        {
-          name: 'Hair Spa Treatment',
-          category: 'Perawatan Rambut',
-          normalPrice: 200000,
-          duration: 90,
-          description: 'Perawatan rambut lengkap dengan masker',
-          isActive: true
-        },
-        {
-          name: 'Full Body Massage',
-          category: 'Body Treatment',
-          normalPrice: 250000,
-          duration: 120,
-          description: 'Pijat seluruh tubuh untuk relaksasi',
-          isActive: true
-        },
-        {
-          name: 'Manicure Pedicure',
-          category: 'Nail Care',
-          normalPrice: 100000,
-          duration: 60,
-          description: 'Perawatan kuku tangan dan kaki',
-          isActive: true
-        }
-      ]
-      
-      for (const service of initialServices) {
-        await prisma.service.create({ data: service })
+      if (stats.status.isHealthy) {
+        console.log('✅ Database is healthy and ready!')
+        console.log(`\n🔗 Admin Login: ${baseUrl}/admin/masuk`)
+        console.log('👤 Default Admin: admin / admin123')
+        console.log(`\n🗄️ Database Manager: ${baseUrl}/admin/database-manager`)
+      } else {
+        console.log('⚠️  Database setup incomplete. Check the logs.')
       }
-      
-      console.log(`✅ Created ${initialServices.length} initial services`)
-    } else {
-      console.log(`💆‍♀️ Found ${existingServices} existing services`)
     }
-    
-    // Create initial therapists if none exist
-    const existingTherapists = await prisma.therapist.count()
-    
-    if (existingTherapists === 0) {
-      console.log('👩‍⚕️ Creating initial therapists...')
-      
-      const initialTherapists = [
-        {
-          initial: 'R',
-          fullName: 'Rina Sari',
-          phone: '081234567890',
-          isActive: true,
-          baseFeePerTreatment: 15000,
-          commissionRate: 0.1
-        },
-        {
-          initial: 'A',
-          fullName: 'Aisha Putri',
-          phone: '081234567891',
-          isActive: true,
-          baseFeePerTreatment: 15000,
-          commissionRate: 0.1
-        }
-      ]
-      
-      for (const therapist of initialTherapists) {
-        await prisma.therapist.create({ data: therapist })
-      }
-      
-      console.log(`✅ Created ${initialTherapists.length} initial therapists`)
-    } else {
-      console.log(`👩‍⚕️ Found ${existingTherapists} existing therapists`)
-    }
-    
-    // Final statistics
-    const stats = {
-      admins: await prisma.admin.count(),
-      customers: await prisma.customer.count(),
-      services: await prisma.service.count(),
-      therapists: await prisma.therapist.count(),
-      treatments: await prisma.dailyTreatment.count(),
-      bookings: await prisma.booking.count()
-    }
-    
-    console.log('\n📈 Database Statistics:')
-    console.log(`   Admins: ${stats.admins}`)
-    console.log(`   Customers: ${stats.customers}`)
-    console.log(`   Services: ${stats.services}`)
-    console.log(`   Therapists: ${stats.therapists}`)
-    console.log(`   Treatments: ${stats.treatments}`)
-    console.log(`   Bookings: ${stats.bookings}`)
-    
-    console.log('\n🎉 Production database setup completed successfully!')
     
   } catch (error) {
-    console.error('❌ Database setup failed:', error)
-    process.exit(1)
-  } finally {
-    await prisma.$disconnect()
+    console.error('❌ Setup failed:', error.message)
   }
 }
 
-// Run the setup
-if (require.main === module) {
-  setupProductionDatabase()
-    .then(() => {
-      console.log('✅ Script completed')
-      process.exit(0)
-    })
-    .catch((error) => {
-      console.error('❌ Script failed:', error)
-      process.exit(1)
-    })
-}
-
-module.exports = { setupProductionDatabase }
+setupDatabase()

@@ -32,12 +32,6 @@ export const prisma = dbConfigured ? (
         url: process.env.DATABASE_URL,
       },
     },
-    // Connection pool settings for Vercel deployment
-    __internal: {
-      engine: {
-        closePromise: undefined,
-      },
-    },
   })
 ) : null
 

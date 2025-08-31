@@ -1,8 +1,6 @@
-// Daily Treatment Management API - CRUD Operations for completed treatments
+// Updated Daily Treatment Management API - CRUD Operations with new schema
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma, isDatabaseAvailable } from '../../../lib/prisma'
 
 // GET /api/treatments - List all treatments with filtering
 export async function GET(request: NextRequest) {

@@ -13,6 +13,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!prisma) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 500 }
+      )
+    }
+
     if (!isDatabaseAvailable() || !prisma) {
       return NextResponse.json(
         { success: false, error: 'Database not available' },
@@ -49,17 +56,17 @@ export async function POST(request: NextRequest) {
 
     // Test 1: Database Connection
     await runTest('Database Connection', async () => {
-      await prisma.$connect()
-      const result = await prisma.$queryRaw`SELECT 1 as test`
+      await prisma!.$connect()
+      const result = await prisma!.$queryRaw`SELECT 1 as test`
       if (!result) throw new Error('Query failed')
     })
 
     // Test 2: Admin Authentication System
     await runTest('Admin System', async () => {
-      const adminCount = await prisma.admin.count()
+      const adminCount = await prisma!.admin.count()
       if (adminCount === 0) throw new Error('No admin users found')
       
-      const admin = await prisma.admin.findFirst()
+      const admin = await prisma!.admin.findFirst()
       if (!admin || !admin.username || !admin.password) {
         throw new Error('Admin data incomplete')
       }
@@ -68,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Test 3: Customer Management
     await runTest('Customer Management', async () => {
       // Test customer creation
-      const testCustomer = await prisma.customer.create({
+      const testCustomer = await prisma!.customer.create({
         data: {
           name: 'Test Customer',
           phone: '+6281234567890',
@@ -78,30 +85,30 @@ export async function POST(request: NextRequest) {
       })
 
       // Test customer retrieval
-      const retrievedCustomer = await prisma.customer.findUnique({
+      const retrievedCustomer = await prisma!.customer.findUnique({
         where: { id: testCustomer.id }
       })
       
       if (!retrievedCustomer) throw new Error('Customer retrieval failed')
 
       // Test customer update
-      await prisma.customer.update({
+      await prisma!.customer.update({
         where: { id: testCustomer.id },
         data: { isVip: true }
       })
 
       // Cleanup
-      await prisma.customer.delete({
+      await prisma!.customer.delete({
         where: { id: testCustomer.id }
       })
     })
 
     // Test 4: Service Management
     await runTest('Service Management', async () => {
-      const serviceCount = await prisma.service.count()
+      const serviceCount = await prisma!.service.count()
       if (serviceCount === 0) throw new Error('No services found')
 
-      const services = await prisma.service.findMany({
+      const services = await prisma!.service.findMany({
         take: 5,
         include: {
           dailyTreatments: true
@@ -121,10 +128,10 @@ export async function POST(request: NextRequest) {
 
     // Test 5: Therapist Management
     await runTest('Therapist Management', async () => {
-      const therapistCount = await prisma.therapist.count()
+      const therapistCount = await prisma!.therapist.count()
       if (therapistCount === 0) throw new Error('No therapists found')
 
-      const therapists = await prisma.therapist.findMany({
+      const therapists = await prisma!.therapist.findMany({
         include: {
           dailyTreatments: true,
           monthlyStats: true
@@ -145,7 +152,7 @@ export async function POST(request: NextRequest) {
     // Test 6: Booking System
     await runTest('Booking System', async () => {
       // Create test booking
-      const testBooking = await prisma.booking.create({
+      const testBooking = await prisma!.booking.create({
         data: {
           customerName: 'Test Booking Customer',
           phone: '+6281234567891',
@@ -159,20 +166,20 @@ export async function POST(request: NextRequest) {
       })
 
       // Test booking retrieval
-      const retrievedBooking = await prisma.booking.findUnique({
+      const retrievedBooking = await prisma!.booking.findUnique({
         where: { id: testBooking.id }
       })
       
       if (!retrievedBooking) throw new Error('Booking retrieval failed')
 
       // Test booking update
-      await prisma.booking.update({
+      await prisma!.booking.update({
         where: { id: testBooking.id },
         data: { status: 'confirmed' }
       })
 
       // Cleanup
-      await prisma.booking.delete({
+      await prisma!.booking.delete({
         where: { id: testBooking.id }
       })
     })
@@ -180,15 +187,15 @@ export async function POST(request: NextRequest) {
     // Test 7: Treatment Recording
     await runTest('Treatment Recording', async () => {
       // Get required data
-      const service = await prisma.service.findFirst()
-      const therapist = await prisma.therapist.findFirst()
+      const service = await prisma!.service.findFirst()
+      const therapist = await prisma!.therapist.findFirst()
       
       if (!service || !therapist) {
         throw new Error('Required service or therapist not found')
       }
 
       // Create test treatment
-      const testTreatment = await prisma.dailyTreatment.create({
+      const testTreatment = await prisma!.dailyTreatment.create({
         data: {
           date: new Date(),
           customerName: 'Test Treatment Customer',
@@ -202,7 +209,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Test treatment retrieval with relations
-      const retrievedTreatment = await prisma.dailyTreatment.findUnique({
+      const retrievedTreatment = await prisma!.dailyTreatment.findUnique({
         where: { id: testTreatment.id },
         include: {
           service: true,
@@ -215,7 +222,7 @@ export async function POST(request: NextRequest) {
       if (!retrievedTreatment) throw new Error('Treatment retrieval failed')
 
       // Cleanup
-      await prisma.dailyTreatment.delete({
+      await prisma!.dailyTreatment.delete({
         where: { id: testTreatment.id }
       })
     })
@@ -226,7 +233,7 @@ export async function POST(request: NextRequest) {
       today.setHours(0, 0, 0, 0)
 
       // Test bookkeeping entry creation
-      const testEntry = await prisma.monthlyBookkeeping.create({
+      const testEntry = await prisma!.monthlyBookkeeping.create({
         data: {
           date: today,
           dailyRevenue: 500000,
@@ -242,7 +249,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Test retrieval
-      const retrievedEntry = await prisma.monthlyBookkeeping.findUnique({
+      const retrievedEntry = await prisma!.monthlyBookkeeping.findUnique({
         where: { id: testEntry.id }
       })
       
@@ -256,7 +263,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Cleanup
-      await prisma.monthlyBookkeeping.delete({
+      await prisma!.monthlyBookkeeping.delete({
         where: { id: testEntry.id }
       })
     })
@@ -264,15 +271,15 @@ export async function POST(request: NextRequest) {
     // Test 9: Feedback System
     await runTest('Feedback System', async () => {
       // Get required data
-      const service = await prisma.service.findFirst()
-      const therapist = await prisma.therapist.findFirst()
+      const service = await prisma!.service.findFirst()
+      const therapist = await prisma!.therapist.findFirst()
       
       if (!service || !therapist) {
         throw new Error('Required service or therapist not found')
       }
 
       // Create test treatment for feedback
-      const testTreatment = await prisma.dailyTreatment.create({
+      const testTreatment = await prisma!.dailyTreatment.create({
         data: {
           date: new Date(),
           customerName: 'Test Feedback Customer',
@@ -284,7 +291,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Create test feedback
-      const testFeedback = await prisma.customerFeedback.create({
+      const testFeedback = await prisma!.customerFeedback.create({
         data: {
           dailyTreatmentId: testTreatment.id,
           overallRating: 5,
@@ -298,7 +305,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Test feedback retrieval
-      const retrievedFeedback = await prisma.customerFeedback.findUnique({
+      const retrievedFeedback = await prisma!.customerFeedback.findUnique({
         where: { id: testFeedback.id },
         include: {
           dailyTreatment: {
@@ -313,10 +320,10 @@ export async function POST(request: NextRequest) {
       if (!retrievedFeedback) throw new Error('Feedback retrieval failed')
 
       // Cleanup
-      await prisma.customerFeedback.delete({
+      await prisma!.customerFeedback.delete({
         where: { id: testFeedback.id }
       })
-      await prisma.dailyTreatment.delete({
+      await prisma!.dailyTreatment.delete({
         where: { id: testTreatment.id }
       })
     })
@@ -324,7 +331,7 @@ export async function POST(request: NextRequest) {
     // Test 10: Data Integrity and Relationships
     await runTest('Data Integrity', async () => {
       // Test foreign key relationships
-      const treatmentWithRelations = await prisma.dailyTreatment.findFirst({
+      const treatmentWithRelations = await prisma!.dailyTreatment.findFirst({
         include: {
           service: true,
           therapist: true,
@@ -340,7 +347,7 @@ export async function POST(request: NextRequest) {
 
       // Test unique constraints
       try {
-        await prisma.customer.create({
+        await prisma!.customer.create({
           data: {
             name: 'Duplicate Test',
             phone: '+6281234567892'
@@ -348,7 +355,7 @@ export async function POST(request: NextRequest) {
         })
         
         // This should fail due to unique constraint
-        await prisma.customer.create({
+        await prisma!.customer.create({
           data: {
             name: 'Duplicate Test 2',
             phone: '+6281234567892'
@@ -358,14 +365,14 @@ export async function POST(request: NextRequest) {
         throw new Error('Unique constraint not working')
       } catch (error) {
         // This is expected - cleanup the test customer
-        await prisma.customer.deleteMany({
+        await prisma!.customer.deleteMany({
           where: { phone: '+6281234567892' }
         })
       }
     })
 
     // Disconnect from database
-    await prisma.$disconnect()
+    await prisma!.$disconnect()
 
     return NextResponse.json({
       success: true,

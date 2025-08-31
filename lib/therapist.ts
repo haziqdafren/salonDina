@@ -51,7 +51,7 @@ export const getDailyTherapistEarnings = async (
   const endOfDay = new Date(date)
   endOfDay.setHours(23, 59, 59, 999)
 
-  const therapist = await prisma.therapist.findUnique({
+  const therapist = await prisma!.therapist.findUnique({
     where: { id: therapistId }
   })
 
@@ -59,7 +59,7 @@ export const getDailyTherapistEarnings = async (
     throw new Error('Therapist not found')
   }
 
-  const treatments = await prisma.dailyTreatment.findMany({
+  const treatments = await prisma!.dailyTreatment.findMany({
     where: {
       therapistId,
       date: {
@@ -81,7 +81,7 @@ export const getMonthlyTherapistEarnings = async (
   const startOfMonth = new Date(year, month - 1, 1)
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999)
 
-  const therapist = await prisma.therapist.findUnique({
+  const therapist = await prisma!.therapist.findUnique({
     where: { id: therapistId }
   })
 
@@ -89,7 +89,7 @@ export const getMonthlyTherapistEarnings = async (
     throw new Error('Therapist not found')
   }
 
-  const treatments = await prisma.dailyTreatment.findMany({
+  const treatments = await prisma!.dailyTreatment.findMany({
     where: {
       therapistId,
       date: {
@@ -102,7 +102,7 @@ export const getMonthlyTherapistEarnings = async (
   const earnings = calculateTherapistEarnings(treatments, therapist)
 
   // Update or create monthly stats
-  await prisma.therapistMonthlyStats.upsert({
+  await prisma!.therapistMonthlyStats.upsert({
     where: {
       therapistId_month_year: {
         therapistId,
@@ -132,7 +132,7 @@ export const getMonthlyTherapistEarnings = async (
 
 // Get therapist performance data
 export const getTherapistPerformance = async (therapistId: string) => {
-  const therapist = await prisma.therapist.findUnique({
+  const therapist = await prisma!.therapist.findUnique({
     where: { id: therapistId },
     include: {
       monthlyStats: {
@@ -168,7 +168,7 @@ export const getTherapistPerformance = async (therapistId: string) => {
   const averageRating = ratingsCount > 0 ? ratingsSum / ratingsCount : 0
 
   // Update therapist average rating
-  await prisma.therapist.update({
+  await prisma!.therapist.update({
     where: { id: therapistId },
     data: { averageRating }
   })
@@ -196,7 +196,7 @@ export const updateTherapistFees = async (
     updateData.commissionRate = commissionRate
   }
 
-  return await prisma.therapist.update({
+  return await prisma!.therapist.update({
     where: { id: therapistId },
     data: updateData
   })
@@ -204,7 +204,7 @@ export const updateTherapistFees = async (
 
 // Get all therapists with their performance
 export const getAllTherapistsWithPerformance = async () => {
-  const therapists = await prisma.therapist.findMany({
+  const therapists = await prisma!.therapist.findMany({
     where: { isActive: true },
     include: {
       monthlyStats: {
@@ -248,7 +248,7 @@ export const calculateDailyTherapistFees = async (date: Date): Promise<number> =
   const endOfDay = new Date(date)
   endOfDay.setHours(23, 59, 59, 999)
 
-  const treatments = await prisma.dailyTreatment.findMany({
+  const treatments = await prisma!.dailyTreatment.findMany({
     where: {
       date: {
         gte: startOfDay,

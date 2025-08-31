@@ -552,15 +552,17 @@ export default function PembukuanHarian() {
                     </td>
                     <td className="py-3 px-4">
                       {(() => {
+                        // Check if feedback is completed from database
+                        const isCompleted = (treatment as any).feedbackCompleted
                         const feedback = feedbackStatus[treatment.id]
-                        const hasFeedback = feedback?.hasFeedback
+                        const hasFeedback = feedback?.hasFeedback || isCompleted
                         
                         if (hasFeedback) {
                           return (
                             <div className="flex items-center gap-2">
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                ✅ Selesai
-                                {feedback.rating && (
+                                ✅ Feedback Selesai
+                                {feedback?.rating && (
                                   <span className="text-yellow-600">⭐{feedback.rating}</span>
                                 )}
                               </span>

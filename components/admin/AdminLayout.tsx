@@ -85,6 +85,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: '💬',
       href: '/admin/feedback',
       description: 'Analisis kepuasan pelanggan',
+    },
+    {
+      id: 'database-manager',
+      title: 'Database Manager',
+      icon: '🗄️',
+      href: '/admin/database-manager',
+      description: 'Kelola dan monitor database',
     }
   ]
 
@@ -203,7 +210,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             x: sidebarOpen || window.innerWidth >= 768 ? 0 : '-100%' 
           }}
           transition={{ duration: 0.3 }}
-          className="bg-white border-r border-slate-200 shadow-lg flex-shrink-0 relative md:relative fixed md:translate-x-0 z-40 h-screen md:h-auto flex flex-col"
+          className="bg-white border-r border-slate-200 shadow-lg flex-shrink-0 fixed md:relative md:translate-x-0 z-40 h-screen md:h-auto flex flex-col"
         >
           {/* Header */}
           <div className="p-6 border-b border-slate-200">
