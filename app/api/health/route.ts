@@ -14,17 +14,28 @@ export async function GET() {
         databaseConnected = await testDatabaseConnection()
         
         if (databaseConnected) {
-          // Get database version
-          const versionResult = await prisma.$queryRaw<Array<{version: string}>>`SELECT version()`
-          dbVersion = versionResult[0]?.version || 'Unknown'
-          
-          // Count tables to verify schema exists
-          const tables = await prisma.$queryRaw<Array<{count: bigint}>>`
-            SELECT COUNT(*) as count 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-          `
-          tableCount = Number(tables[0]?.count || 0)
+          try {
+            // Get database version
+            const versionResult = await prisma.$queryRaw<Array<{version: string}>>`SELECT version()`
+            dbVersion = versionResult[0]?.version || 'Unknown'
+            
+            // Count tables to verify schema exists
+            const tables = await prisma.$queryRaw<Array<{count: bigint}>>`
+              SELECT COUNT(*) as count 
+              FROM information_schema.tables 
+              WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+            `
+            tableCount = Number(tables[0]?.count || 0)
+
+            // Test specific tables exist
+            const adminCount = await prisma.admin.count()
+            const serviceCount = await prisma.service.count()
+            
+            console.log(`Health check: ${adminCount} admins, ${serviceCount} services, ${tableCount} tables`)
+          } catch (queryError) {
+            console.error('Database query error during health check:', queryError)
+            dbVersion = 'Error querying database'
+          }
         }
       } catch (error) {
         console.error('Database connection test error:', error)

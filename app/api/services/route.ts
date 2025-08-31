@@ -1,17 +1,25 @@
-// Service/Treatment Management API - Full CRUD Operations
+// Updated Service/Treatment Management API - Works with Supabase schema
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma, isDatabaseAvailable } from '../../../lib/prisma'
 
 // GET /api/services - List all services with optional filtering
 export async function GET(request: NextRequest) {
+  if (!isDatabaseAvailable() || !prisma) {
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Database not configured',
+      data: [],
+      categories: [],
+      total: 0
+    }, { status: 503 })
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const active = searchParams.get('active')
     const category = searchParams.get('category')
     const search = searchParams.get('search')
-    const popular = searchParams.get('popular') // Get popular services
+    const popular = searchParams.get('popular')
 
     const where: any = {}
     
@@ -20,62 +28,45 @@ export async function GET(request: NextRequest) {
     }
     
     if (category) {
-      where.category = { contains: category }
+      where.category = { contains: category, mode: 'insensitive' }
     }
     
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { description: { contains: search } },
-        { category: { contains: search } }
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } }
       ]
     }
 
     let orderBy: any = { name: 'asc' }
     
     if (popular === 'true') {
-      orderBy = { popularity: 'desc' }
+      orderBy = { normalPrice: 'desc' } // Order by price as popularity indicator
     }
 
-    const services = await prisma.service.findMany({
+    const services = await prisma!.service.findMany({
       where,
-      include: {
-        dailyTreatments: {
-          where: {
-            date: {
-              gte: new Date(new Date().setMonth(new Date().getMonth() - 1)) // Last 30 days
-            }
-          }
-        }
-      },
       orderBy
     })
 
-    // Calculate service statistics
-    const servicesWithStats = services.map(service => {
-      const recentBookings = service.dailyTreatments.length
-      const totalRevenue = service.dailyTreatments.reduce((sum, treatment) => 
-        sum + treatment.servicePrice, 0
-      )
-
-      return {
-        id: service.id,
-        name: service.name,
-        category: service.category,
-        normalPrice: service.normalPrice,
-        promoPrice: service.promoPrice,
-        duration: service.duration,
-        description: service.description,
-        isActive: service.isActive,
-        popularity: service.popularity,
-        // Statistics
-        recentBookings,
-        totalRevenue,
-        averagePrice: recentBookings > 0 ? Math.round(totalRevenue / recentBookings) : service.normalPrice,
-        // Raw data
-        _raw: service
-      }
-    })
+    // Format services for frontend (matching expected interface)
+    const servicesWithStats = services.map(service => ({
+      id: service.id.toString(),
+      name: service.name,
+      category: service.category,
+      normalPrice: service.normalPrice,
+      promoPrice: service.promoPrice,
+      duration: service.duration,
+      description: service.description || '',
+      isActive: service.isActive,
+      therapistFee: service.therapistFee,
+      // Frontend compatibility
+      popularity: service.normalPrice, // Use price as popularity indicator
+      recentBookings: 0, // Will be calculated if needed
+      totalRevenue: 0,
+      averagePrice: service.promoPrice || service.normalPrice
+    }))
 
     // Get categories for filtering
     const categories = [...new Set(services.map(s => s.category))].sort()
@@ -95,20 +86,28 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching services:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch services' },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch services',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      data: [],
+      categories: [],
+      total: 0
+    }, { status: 500 })
   }
 }
 
 // POST /api/services - Create new service
 export async function POST(request: NextRequest) {
+  if (!isDatabaseAvailable() || !prisma) {
+    return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 })
+  }
+
   try {
     const data = await request.json()
     
     // Validate required fields
-    const { name, category, normalPrice, duration } = data
+    const { name, category, normalPrice, duration, therapistFee } = data
     
     if (!name || !category || !normalPrice || !duration) {
       return NextResponse.json(
@@ -117,23 +116,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if service name already exists in this category
-    const existingService = await prisma.service.findFirst({
-      where: { 
-        name,
-        category 
-      }
+    // Check if service name already exists
+    const existingService = await prisma!.service.findFirst({
+      where: { name: { equals: name, mode: 'insensitive' } }
     })
 
     if (existingService) {
       return NextResponse.json(
-        { success: false, error: 'Service with this name already exists in this category' },
+        { success: false, error: 'Service with this name already exists' },
         { status: 409 }
       )
     }
 
-    // Create service
-    const service = await prisma.service.create({
+    // Create service with new schema
+    const service = await prisma!.service.create({
       data: {
         name,
         category,
@@ -141,23 +137,25 @@ export async function POST(request: NextRequest) {
         promoPrice: data.promoPrice ? parseInt(data.promoPrice) : null,
         duration: parseInt(duration),
         description: data.description || `${category} - ${name}`,
-        isActive: data.isActive !== false,
-        popularity: data.popularity || 0
+        therapistFee: therapistFee ? parseInt(therapistFee) : 0,
+        isActive: data.isActive !== false
       }
     })
 
     return NextResponse.json({
       success: true,
+      message: 'Service created successfully',
       data: {
-        id: service.id,
+        id: service.id.toString(),
         name: service.name,
         category: service.category,
         normalPrice: service.normalPrice,
         promoPrice: service.promoPrice,
         duration: service.duration,
         description: service.description,
+        therapistFee: service.therapistFee,
         isActive: service.isActive,
-        popularity: service.popularity,
+        popularity: service.normalPrice,
         recentBookings: 0,
         totalRevenue: 0,
         averagePrice: service.normalPrice
@@ -166,9 +164,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error creating service:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create service' },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to create service',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
