@@ -1,9 +1,7 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma, isDatabaseAvailable } from './prisma'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -19,23 +17,36 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Username dan password wajib diisi')
         }
 
+        // Check if database is available
+        if (!isDatabaseAvailable() || !prisma) {
+          console.error('Database not available for authentication')
+          throw new Error('Database tidak tersedia')
+        }
+
         try {
+          console.log('Attempting login for username:', credentials.username)
+          
           const admin = await prisma.admin.findUnique({
             where: {
               username: credentials.username
             }
           })
 
+          console.log('Admin found:', admin ? 'Yes' : 'No')
+
           if (!admin) {
             throw new Error('Admin tidak ditemukan')
           }
 
+          console.log('Comparing passwords...')
           const isPasswordValid = await bcrypt.compare(credentials.password, admin.password)
+          console.log('Password valid:', isPasswordValid)
 
           if (!isPasswordValid) {
             throw new Error('Password salah')
           }
 
+          console.log('Login successful for:', admin.username)
           return {
             id: admin.id,
             name: admin.name,
@@ -43,6 +54,9 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error('Authentication error:', error)
+          if (error instanceof Error) {
+            throw error
+          }
           throw new Error('Gagal login. Silakan coba lagi.')
         }
       }
