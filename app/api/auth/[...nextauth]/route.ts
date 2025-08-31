@@ -1,6 +1,6 @@
 import NextAuth, { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { prisma, isDatabaseAvailable } from '../../../../lib/prisma'
+import { supabase, isSupabaseConfigured } from '../../../../lib/supabase'
 import bcrypt from 'bcryptjs'
 
 export const authOptions: NextAuthOptions = {
@@ -18,24 +18,22 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Enhanced database check
-        if (!isDatabaseAvailable() || !prisma) {
-          console.error('Database not available for authentication')
+        if (!isSupabaseConfigured()) {
+          console.error('Supabase not available for authentication')
           throw new Error('Database not configured')
         }
 
         try {
-          // Try to connect to database first
-          await prisma.$connect()
-          
-          const user = await prisma.user.findFirst({
-            where: {
-              OR: [
-                { username: credentials.username },
-                { email: credentials.username }
-              ],
-              isActive: true
-            }
-          })
+          // Query user from Supabase
+          const { data: users, error } = await supabase
+            .from('users')
+            .select('*')
+            .or(`username.eq.${credentials.username},email.eq.${credentials.username}`)
+            .eq('is_active', true)
+            .limit(1)
+
+          if (error) throw error
+          const user = users?.[0]
 
           if (!user) {
             console.log('User not found:', credentials.username)

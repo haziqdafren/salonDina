@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma, isDatabaseAvailable } from '../../../lib/prisma'
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase'
 
-// Fallback mock data - always available
+// Fallback services data (same as before)
 const FALLBACK_SERVICES = [
   { 
     id: 1, 
@@ -10,10 +10,10 @@ const FALLBACK_SERVICES = [
     price: 35000, 
     duration: 60, 
     description: 'Perawatan wajah untuk kulit berjerawat', 
-    therapistFee: 15000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 15000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   },
   { 
     id: 2, 
@@ -22,10 +22,10 @@ const FALLBACK_SERVICES = [
     price: 40000, 
     duration: 60, 
     description: 'Facial pencerah wajah alami', 
-    therapistFee: 15000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 15000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   },
   { 
     id: 3, 
@@ -34,89 +34,149 @@ const FALLBACK_SERVICES = [
     price: 50000, 
     duration: 75, 
     description: 'Perawatan anti penuaan dini', 
-    therapistFee: 20000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 20000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   },
   { 
     id: 4, 
+    name: 'Facial Whitening', 
+    category: 'facial', 
+    price: 45000, 
+    duration: 60, 
+    description: 'Facial pemutih wajah', 
+    therapist_fee: 17500, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
+  },
+  { 
+    id: 5, 
+    name: 'Facial Basic', 
+    category: 'facial', 
+    price: 30000, 
+    duration: 45, 
+    description: 'Perawatan wajah dasar', 
+    therapist_fee: 12500, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
+  },
+  { 
+    id: 6, 
     name: 'Hair Spa Creambath', 
     category: 'hair_spa', 
     price: 25000, 
     duration: 45, 
     description: 'Creambath dengan vitamin rambut', 
-    therapistFee: 10000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 10000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   },
   { 
-    id: 5, 
+    id: 7, 
     name: 'Hair Spa Protein', 
     category: 'hair_spa', 
     price: 35000, 
     duration: 60, 
     description: 'Perawatan protein untuk rambut rusak', 
-    therapistFee: 15000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 15000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   },
   { 
-    id: 6, 
+    id: 8, 
     name: 'Hair Spa Smoothing', 
     category: 'hair_spa', 
     price: 150000, 
     duration: 120, 
     description: 'Perawatan pelurus rambut alami', 
-    therapistFee: 50000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 50000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   },
   { 
-    id: 7, 
+    id: 9, 
+    name: 'Hair Spa Keratin', 
+    category: 'hair_spa', 
+    price: 200000, 
+    duration: 150, 
+    description: 'Treatment keratin untuk rambut sehat', 
+    therapist_fee: 75000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
+  },
+  { 
+    id: 10, 
     name: 'Full Body Massage', 
     category: 'body_treatment', 
     price: 60000, 
     duration: 90, 
     description: 'Pijat seluruh tubuh relaksasi', 
-    therapistFee: 25000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 25000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   },
   { 
-    id: 8, 
+    id: 11, 
     name: 'Aromatherapy Massage', 
     category: 'body_treatment', 
     price: 70000, 
     duration: 90, 
     description: 'Pijat aromaterapi dengan essential oil', 
-    therapistFee: 30000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 30000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   },
   { 
-    id: 9, 
+    id: 12, 
+    name: 'Hot Stone Massage', 
+    category: 'body_treatment', 
+    price: 85000, 
+    duration: 90, 
+    description: 'Pijat dengan batu panas', 
+    therapist_fee: 35000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
+  },
+  { 
+    id: 13, 
     name: 'Body Scrub', 
     category: 'body_treatment', 
     price: 50000, 
     duration: 60, 
     description: 'Lulur seluruh tubuh', 
-    therapistFee: 20000, 
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    therapist_fee: 20000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
+  },
+  { 
+    id: 14, 
+    name: 'Body Whitening', 
+    category: 'body_treatment', 
+    price: 75000, 
+    duration: 75, 
+    description: 'Perawatan pemutih badan', 
+    therapist_fee: 30000, 
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   }
 ]
 
-const FALLBACK_CATEGORIES = [
-  { name: 'facial', count: 3 },
-  { name: 'hair_spa', count: 3 },
-  { name: 'body_treatment', count: 3 }
+const CATEGORIES = [
+  { name: 'facial', count: 5 },
+  { name: 'hair_spa', count: 4 },
+  { name: 'body_treatment', count: 5 }
 ]
 
 export async function GET(request: NextRequest) {
@@ -125,118 +185,13 @@ export async function GET(request: NextRequest) {
   const category = searchParams.get('category')
   const search = searchParams.get('search')
 
-  // LAYER 1: Try database connection
-  if (!isDatabaseAvailable() || !prisma) {
-    console.log('Database not available, using fallback data')
-    return NextResponse.json({
-      success: true,
-      data: FALLBACK_SERVICES.filter(s => active !== 'true' || s.isActive),
-      categories: FALLBACK_CATEGORIES,
-      total: FALLBACK_SERVICES.length,
-      fallback: 'no_database',
-      message: 'Using fallback data - database not configured'
-    })
-  }
-
-  try {
-    // LAYER 2: Try database operations
-    await prisma.$connect()
-    
-    // Auto-populate if empty
-    let serviceCount = 0
-    try {
-      serviceCount = await prisma.service.count()
-      
-      if (serviceCount === 0) {
-        console.log('Database empty, auto-populating...')
-        await prisma.service.createMany({
-          data: FALLBACK_SERVICES.map(service => ({
-            name: service.name,
-            category: service.category,
-            price: service.price,
-            duration: service.duration,
-            description: service.description,
-            therapistFee: service.therapistFee,
-            isActive: service.isActive
-          }))
-        })
-      }
-    } catch (populationError) {
-      console.error('Auto-population failed:', populationError)
-      // Continue with existing data or fallback
-    }
-
-    // Build query filters
-    const where: any = {}
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured()) {
+    console.log('Supabase not configured, using fallback data')
+    let filteredServices = [...FALLBACK_SERVICES]
     
     if (active === 'true') {
-      where.isActive = true
-    }
-    
-    if (category && category !== 'semua') {
-      where.category = category
-    }
-    
-    if (search) {
-      where.name = {
-        contains: search,
-        mode: 'insensitive'
-      }
-    }
-
-    // LAYER 3: Try to fetch from database
-    const services = await prisma.service.findMany({
-      where,
-      orderBy: [
-        { category: 'asc' },
-        { name: 'asc' }
-      ],
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        duration: true,
-        description: true,
-        category: true,
-        therapistFee: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    })
-
-    const categories = await prisma.service.groupBy({
-      by: ['category'],
-      where: active === 'true' ? { isActive: true } : {},
-      _count: {
-        category: true
-      },
-      orderBy: {
-        category: 'asc'
-      }
-    })
-
-    const categoriesWithCount = categories.map(cat => ({
-      name: cat.category,
-      count: cat._count.category
-    }))
-
-    return NextResponse.json({
-      success: true,
-      data: services,
-      categories: categoriesWithCount,
-      total: services.length,
-      source: 'database'
-    })
-
-  } catch (error) {
-    console.error('Services API error:', error)
-    
-    // LAYER 4: Final fallback with filtered mock data
-    let filteredServices = FALLBACK_SERVICES
-    
-    if (active === 'true') {
-      filteredServices = filteredServices.filter(s => s.isActive)
+      filteredServices = filteredServices.filter(s => s.is_active)
     }
     
     if (category && category !== 'semua') {
@@ -245,17 +200,82 @@ export async function GET(request: NextRequest) {
     
     if (search) {
       filteredServices = filteredServices.filter(s => 
-        s.name.toLowerCase().includes(search.toLowerCase())
+        s.name.toLowerCase().includes(search.toLowerCase()) ||
+        s.description.toLowerCase().includes(search.toLowerCase())
       )
     }
 
     return NextResponse.json({
       success: true,
       data: filteredServices,
-      categories: FALLBACK_CATEGORIES,
+      categories: CATEGORIES,
       total: filteredServices.length,
-      fallback: 'database_error',
-      error: 'Database connection failed, using mock data'
+      message: 'Using fallback data - Supabase not configured',
+      source: 'fallback'
+    })
+  }
+
+  try {
+    // Build query
+    let query = supabase.from('services').select('*')
+    
+    if (active === 'true') {
+      query = query.eq('is_active', true)
+    }
+    
+    if (category && category !== 'semua') {
+      query = query.eq('category', category)
+    }
+    
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
+    }
+
+    const { data: services, error } = await query.order('name', { ascending: true })
+
+    if (error) {
+      console.error('Supabase query error:', error)
+      throw error
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: services || [],
+      categories: CATEGORIES,
+      total: services?.length || 0,
+      message: 'Services loaded successfully from Supabase',
+      source: 'supabase'
+    })
+
+  } catch (error) {
+    console.error('Services API error:', error)
+    
+    // Return fallback data on any error
+    let filteredServices = [...FALLBACK_SERVICES]
+    
+    if (active === 'true') {
+      filteredServices = filteredServices.filter(s => s.is_active)
+    }
+    
+    if (category && category !== 'semua') {
+      filteredServices = filteredServices.filter(s => s.category === category)
+    }
+    
+    if (search) {
+      filteredServices = filteredServices.filter(s => 
+        s.name.toLowerCase().includes(search.toLowerCase()) ||
+        s.description.toLowerCase().includes(search.toLowerCase())
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: filteredServices,
+      categories: CATEGORIES,
+      total: filteredServices.length,
+      message: 'Using fallback data - Supabase error',
+      source: 'fallback',
+      error: error instanceof Error ? error.message : 'Unknown error'
     })
   }
 }

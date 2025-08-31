@@ -5,22 +5,11 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
-    "postinstall": "npx prisma generate --schema=./prisma/schema.prisma || true",
     "start": "next start",
-    "lint": "next lint",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "npx prisma migrate reset && npm run db:seed",
-    "db:generate": "npx prisma generate",
-    "db:push": "npx prisma db push",
-    "db:setup": "npx prisma generate && npx prisma db push && npm run db:seed",
-    "db:migrate": "npx prisma migrate deploy",
-    "db:setup-production": "node scripts/setup-production-db.js",
-    "db:studio": "npx prisma studio",
-    "vercel:build": "npx prisma generate && npx prisma migrate deploy && next build"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.10.0",
-    "@prisma/client": "^6.13.0",
+    "@supabase/supabase-js": "^2.56.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/pg": "^8.15.5",
     "bcryptjs": "^3.0.2",
@@ -28,7 +17,6 @@
     "next": "15.0.3",
     "next-auth": "^4.24.11",
     "pg": "^8.16.3",
-    "prisma": "^6.13.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.62.0",
