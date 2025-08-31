@@ -26,7 +26,7 @@ interface FeedbackData {
 
 export default function PublicFeedbackPage() {
   const params = useParams()
-  const treatmentId = params.treatmentId as string
+  const treatmentId = params?.treatmentId as string
   const [treatment, setTreatment] = useState<TreatmentInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
