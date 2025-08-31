@@ -217,6 +217,8 @@ export async function GET(request: NextRequest) {
 
   try {
     // Build query
+    if (!supabase) throw new Error('Supabase not initialized')
+    
     let query = supabase.from('services').select('*')
     
     if (active === 'true') {

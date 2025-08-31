@@ -25,6 +25,10 @@ const authOptions: NextAuthOptions = {
 
         try {
           // Query user from Supabase
+          if (!supabase) {
+            throw new Error('Supabase client not initialized')
+          }
+
           const { data: users, error } = await supabase
             .from('users')
             .select('*')

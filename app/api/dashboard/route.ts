@@ -68,6 +68,8 @@ export async function GET(request: NextRequest) {
   try {
     // Create admin user if none exists
     try {
+      if (!supabase) throw new Error('Supabase not initialized')
+      
       const { data: users, error: userError } = await supabase
         .from('users')
         .select('id')
@@ -112,6 +114,8 @@ export async function GET(request: NextRequest) {
 
     try {
       // Today's treatments from Supabase
+      if (!supabase) throw new Error('Supabase not initialized')
+      
       const { data: todayTreatments, error: todayError } = await supabase
         .from('treatments')
         .select('*')
