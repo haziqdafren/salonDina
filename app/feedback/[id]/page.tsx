@@ -18,7 +18,7 @@ interface FeedbackData {
 export default function FeedbackPage() {
   const params = useParams()
   const router = useRouter()
-  const { id } = params
+  const id = params?.id as string
   
   const [feedback, setFeedback] = useState<FeedbackData>({
     overallRating: 5,
