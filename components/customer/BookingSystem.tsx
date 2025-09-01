@@ -63,7 +63,7 @@ const BookingSystem = () => {
 
   // Filter treatments based on search and category
   const filteredTreatments = useMemo(() => {
-    let filtered = treatments.filter(treatment => treatment.isActive)
+    let filtered = treatments.filter(treatment => treatment.is_active)
 
     if (activeCategory !== 'all') {
       filtered = filtered.filter(treatment => treatment.category === activeCategory)

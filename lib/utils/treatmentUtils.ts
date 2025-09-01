@@ -2,15 +2,19 @@
 // Replaces static data with dynamic API-based functions
 
 export interface Treatment {
-  id: string
+  id: string | number
   name: string
-  normalPrice: number
-  promoPrice: number | null
+  price: number
+  normalPrice?: number
+  promoPrice?: number | null
   duration: number
-  popularity: number
+  popularity?: number
   category: string
   description?: string
-  isActive: boolean
+  is_active: boolean
+  therapist_fee?: number
+  created_at?: string
+  updated_at?: string
 }
 
 // Format currency consistently across the app
@@ -31,7 +35,7 @@ export const calculateTotalDuration = (treatments: Treatment[]): number => {
 // Calculate total price of selected treatments
 export const calculateTotalPrice = (treatments: Treatment[]): number => {
   return treatments.reduce((total, treatment) => {
-    return total + (treatment.promoPrice || treatment.normalPrice)
+    return total + (treatment.promoPrice || treatment.price || treatment.normalPrice || 0)
   }, 0)
 }
 

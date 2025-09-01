@@ -127,7 +127,41 @@ export default function AdminDashboard() {
         if (response.ok) {
           const result = await response.json()
           if (result.success) {
-            setData(result.data)
+            // Map API response to expected dashboard data structure
+            const mappedData: DashboardData = {
+              todayRevenue: result.data.today?.revenue || 0,
+              yesterdayRevenue: 0, // API doesn't provide this
+              todayBookings: {
+                confirmed: result.data.today?.treatments || 0,
+                pending: 0, // API doesn't provide this breakdown
+                completed: result.data.today?.treatments || 0
+              },
+              newCustomers: 0, // API doesn't provide this
+              monthlyNewCustomers: 0,
+              popularTreatment: {
+                name: 'Data tidak tersedia',
+                count: 0
+              },
+              therapistTips: result.data.today?.therapistFees || 0,
+              activeTherapists: result.data.system?.activeTherapists || 0,
+              therapistList: [], // API doesn't provide detailed therapist data
+              recentBookings: (result.data.today?.treatments_detail || []).map((treatment: any, index: number) => ({
+                id: treatment.id || index,
+                customer: treatment.customerName || 'Customer',
+                service: treatment.serviceName || 'Service',
+                therapist: treatment.therapistName || 'Therapist',
+                time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                status: treatment.isFreeVisit ? 'completed' : 'completed' as const,
+                amount: treatment.price || 0
+              })),
+              monthlyStats: {
+                totalRevenue: result.data.monthly?.revenue || 0,
+                totalBookings: result.data.monthly?.treatments || 0,
+                averagePerBooking: result.data.monthly?.treatments > 0 ? Math.round((result.data.monthly?.revenue || 0) / result.data.monthly.treatments) : 0,
+                therapistFees: result.data.monthly?.therapistFees || 0
+              }
+            }
+            setData(mappedData)
           } else {
             console.error('Failed to fetch dashboard data:', result.error)
             // Fallback to mock data if API fails
