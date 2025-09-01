@@ -76,17 +76,17 @@ const BookingSystem = () => {
       )
     }
 
-    return filtered.sort((a, b) => b.popularity - a.popularity)
+    return filtered.sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
   }, [treatments, activeCategory, searchTerm])
 
   // Category tabs data - generate from live data
   const categoryTabs = useMemo(() => {
     const tabs = [
-      { key: 'all', title: 'Semua', icon: '✨', count: treatments.filter(t => t.isActive).length }
+      { key: 'all', title: 'Semua', icon: '✨', count: treatments.filter(t => t.is_active).length }
     ]
     
     categories.forEach(category => {
-      const count = treatments.filter(t => t.category === category && t.isActive).length
+      const count = treatments.filter(t => t.category === category && t.is_active).length
       if (count > 0) {
         tabs.push({
           key: category,
@@ -119,7 +119,7 @@ const BookingSystem = () => {
 
   const generateWhatsAppMessage = () => {
     const services = selectedServices.map(s => 
-      `• ${s.name} - ${formatRupiah(s.promoPrice || s.normalPrice)}`
+      `• ${s.name} - ${formatRupiah(s.promoPrice || s.price)}`
     ).join('\n');
 
     const message = `Assalamu'alaikum Kak Dina! 🌸

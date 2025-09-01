@@ -242,27 +242,41 @@ export async function GET(request: NextRequest) {
       throw error
     }
 
-    // Map database fields to expected format
+    // Map database fields to expected format (using exact DB field names)
     const mappedServices = (services || []).map(service => ({
       id: service.id,
       name: service.name,
       category: service.category,
-      price: service.normalPrice || service.price || 0,
-      normalPrice: service.normalPrice,
+      price: service.normalPrice, // Primary price field
+      normalPrice: service.normalPrice, 
       promoPrice: service.promoPrice,
       duration: service.duration || 60,
       description: service.description || '',
       therapist_fee: service.therapistFee || 0,
-      is_active: service.isActive !== false, // Default to true if not specified
+      is_active: service.isActive !== false, // Map isActive -> is_active for frontend compatibility
       created_at: service.createdAt,
       updated_at: service.updatedAt,
       popularity: service.popularity || 0
     }))
 
+    // Generate categories from actual data
+    const categoryMap = new Map()
+    mappedServices.forEach(service => {
+      if (service.is_active && service.category) {
+        const category = service.category
+        categoryMap.set(category, (categoryMap.get(category) || 0) + 1)
+      }
+    })
+
+    const actualCategories = Array.from(categoryMap.entries()).map(([name, count]) => ({
+      name,
+      count
+    }))
+
     return NextResponse.json({
       success: true,
       data: mappedServices,
-      categories: CATEGORIES,
+      categories: actualCategories,
       total: mappedServices.length,
       message: 'Services loaded successfully from Supabase',
       source: 'supabase'
