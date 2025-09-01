@@ -148,7 +148,7 @@ export default function DatabaseNotConnected({
           </button>
 
           <div className="text-xs text-gray-500 mt-4">
-            <p>Environment: {process.env.NODE_ENV || 'development'}</p>
+            <p>Status: Database disconnected</p>
             <p>Timestamp: {new Date().toLocaleString('id-ID')}</p>
           </div>
         </motion.div>
