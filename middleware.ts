@@ -7,7 +7,6 @@ export default withAuth(
     // Rate limiting for login attempts
     if (req.nextUrl.pathname === '/admin/masuk') {
       const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown'
-      // In production, implement Redis-based rate limiting here
       console.log(`Login attempt from IP: ${ip}`)
     }
 
@@ -29,9 +28,11 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Protect all admin routes except login page
-        if (req.nextUrl.pathname.startsWith('/admin') && 
-            req.nextUrl.pathname !== '/admin/masuk') {
+        // Only protect dashboard and other admin pages, NOT the login page
+        if (req.nextUrl.pathname.startsWith('/admin/dashboard') || 
+            req.nextUrl.pathname.startsWith('/admin/treatments') ||
+            req.nextUrl.pathname.startsWith('/admin/customers') ||
+            req.nextUrl.pathname.startsWith('/admin/bookings')) {
           return !!token
         }
         return true

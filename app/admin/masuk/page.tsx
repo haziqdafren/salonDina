@@ -180,6 +180,7 @@ export default function AdminLogin() {
                 onChange={(e) => setCredentials({...credentials, username: e.target.value})}
                 className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 bg-slate-50 focus:bg-white"
                 placeholder="Masukkan username"
+                autoComplete="username"
                 disabled={isLoading || !!(lockoutTime && lockoutTime > Date.now())}
               />
             </div>
@@ -199,6 +200,7 @@ export default function AdminLogin() {
                 onChange={(e) => setCredentials({...credentials, password: e.target.value})}
                 className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 bg-slate-50 focus:bg-white"
                 placeholder="Masukkan password"
+                autoComplete="current-password"
                 disabled={isLoading || !!(lockoutTime && lockoutTime > Date.now())}
               />
             </div>

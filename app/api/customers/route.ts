@@ -39,6 +39,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized')
+    }
+
     const { data: customers, error } = await supabase
       .from('Customer')
       .select('*')
@@ -70,6 +74,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized')
+    }
+
     const body = await request.json()
     
     const { data, error } = await supabase

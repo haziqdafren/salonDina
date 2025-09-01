@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized')
+    }
+
     const { data: bookings, error } = await supabase
       .from('Booking')
       .select(`
@@ -72,6 +76,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized')
+    }
+
     const body = await request.json()
     
     const { data, error } = await supabase

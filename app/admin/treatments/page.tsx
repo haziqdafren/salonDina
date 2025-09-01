@@ -34,7 +34,7 @@ interface ServiceFormData {
 
 export default function LayananHarga() {
   const [services, setServices] = useState<Service[]>([])
-  const [categories, setCategories] = useState<string[]>([])
+  const [categories, setCategories] = useState<{name: string, count: number}[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -352,7 +352,7 @@ export default function LayananHarga() {
               >
                 <option value="all">Semua Kategori</option>
                 {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category.name} value={category.name}>{category.name}</option>
                 ))}
               </select>
             </div>
@@ -413,7 +413,7 @@ export default function LayananHarga() {
                   >
                     <option value="">Pilih Kategori</option>
                     {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
+                      <option key={category.name} value={category.name}>{category.name}</option>
                     ))}
                   </select>
                 </div>

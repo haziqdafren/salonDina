@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatRupiah, calculateTotalDuration, calculateTotalPrice, getCategoryDisplayName, getCategoryIcon, Treatment } from '../../lib/utils/treatmentUtils'
 import { getCurrentBusinessStatus, getAvailableSlots, isWithinPrayerTime, SALON_BUSINESS_HOURS } from '../../lib/utils/businessHours'
-import IndonesianPaymentMethods from '../payment/IndonesianPaymentMethods'
 
 // Treatment interface imported from utils
 
@@ -162,7 +161,7 @@ Wassalamu'alaikum`;
         date: customerInfo.date,
         time: customerInfo.time.replace(' 🕌', ''), // Clean up prayer time indicator
         status: 'pending',
-        notes: `${customerInfo.notes || 'Tidak ada catatan khusus'}\n\nLayanan detail:\n${selectedServices.map(s => `• ${s.name} - ${formatRupiah(s.promoPrice || s.normalPrice)} (${s.duration}m)`).join('\n')}\n\nTotal Estimasi: ${formatRupiah(totalPrice)}\nEstimasi Durasi: ${Math.ceil(totalDuration / 60)} jam ${totalDuration % 60} menit`
+        notes: `${customerInfo.notes || 'Tidak ada catatan khusus'}\n\nLayanan detail:\n${selectedServices.map(s => `• ${s.name} - ${formatRupiah(s.promoPrice || s.normalPrice || 0)} (${s.duration}m)`).join('\n')}\n\nTotal Estimasi: ${formatRupiah(totalPrice)}\nEstimasi Durasi: ${Math.ceil(totalDuration / 60)} jam ${totalDuration % 60} menit`
       };
 
       // Save to database
@@ -374,7 +373,7 @@ Wassalamu'alaikum`;
                     className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/50 hover:border-salon-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden"
                   >
                     {/* Popular Badge */}
-                    {treatment.popularity >= 8 && (
+                    {(treatment.popularity || 0) >= 8 && (
                       <div className="absolute top-3 right-3">
                         <div className="bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
                           POPULER
@@ -404,12 +403,12 @@ Wassalamu'alaikum`;
                               {formatRupiah(treatment.promoPrice)}
                             </div>
                             <div className="text-sm text-slate-400 line-through">
-                              {formatRupiah(treatment.normalPrice)}
+                              {formatRupiah(treatment.normalPrice || 0)}
                             </div>
                           </div>
                         ) : (
                           <div className="text-xl font-bold text-slate-700">
-                            {formatRupiah(treatment.normalPrice)}
+                            {formatRupiah(treatment.normalPrice || 0)}
                           </div>
                         )}
                       </div>
@@ -826,15 +825,15 @@ Wassalamu'alaikum`;
                           {formatRupiah(selectedTreatment.promoPrice)}
                         </div>
                         <div className="text-lg text-slate-400 line-through">
-                          {formatRupiah(selectedTreatment.normalPrice)}
+                          {formatRupiah(selectedTreatment.normalPrice || 0)}
                         </div>
                         <div className="inline-block bg-green-500 text-white text-sm px-3 py-1 rounded-full font-bold">
-                          HEMAT {formatRupiah(selectedTreatment.normalPrice - selectedTreatment.promoPrice)}
+                          HEMAT {formatRupiah((selectedTreatment.normalPrice || 0) - (selectedTreatment.promoPrice || 0))}
                         </div>
                       </div>
                     ) : (
                       <div className="text-3xl font-bold text-slate-700">
-                        {formatRupiah(selectedTreatment.normalPrice)}
+                        {formatRupiah(selectedTreatment.normalPrice || 0)}
                       </div>
                     )}
                   </div>

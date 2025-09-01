@@ -28,7 +28,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sessionWarning, setSessionWarning] = useState(false)
   const [remainingTime, setRemainingTime] = useState('')
 
-  // Navigation items with Indonesian business language
+  // Navigation items with Indonesian business language - Only existing pages
   const navigationItems: NavItem[] = [
     {
       id: 'dashboard',
@@ -57,41 +57,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: '💆‍♀️',
       href: '/admin/treatments',
       description: 'Manajemen treatment dan pricing',
-    },
-    {
-      id: 'therapists',
-      title: 'Manajemen Therapist',
-      icon: '👩‍⚕️',
-      href: '/admin/kelola-therapist',
-      description: 'Data dan jadwal therapist',
-    },
-    {
-      id: 'bookkeeping',
-      title: 'Pembukuan Harian',
-      icon: '📝',
-      href: '/admin/pembukuan-harian',
-      description: 'Catat transaksi harian',
-    },
-    {
-      id: 'reports',
-      title: 'Laporan Bulanan',
-      icon: '📊',
-      href: '/admin/pembukuan-bulanan',
-      description: 'Analisis pendapatan bulanan',
-    },
-    {
-      id: 'feedback',
-      title: 'Manajemen Feedback',
-      icon: '💬',
-      href: '/admin/feedback',
-      description: 'Analisis kepuasan pelanggan',
-    },
-    {
-      id: 'database-manager',
-      title: 'Database Manager',
-      icon: '🗄️',
-      href: '/admin/database-manager',
-      description: 'Kelola dan monitor database',
     }
   ]
 
