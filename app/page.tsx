@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import BookingSystem from '../components/customer/BookingSystem'
-import PrayerTimeWidget from '../components/customer/PrayerTimeWidget'
+// import PrayerTimeWidget from '../components/customer/PrayerTimeWidget' // Removed - unnecessary
 import WhatsAppFloat from '../components/customer/WhatsAppFloat'
 import CustomerNavbar from '../components/customer/CustomerNavbar'
 import DatabaseNotConnected from '../components/DatabaseNotConnected'
@@ -676,7 +676,6 @@ export default function Homepage() {
       </motion.section>
 
       {/* Fixed Position Elements */}
-      <PrayerTimeWidget />
       <WhatsAppFloat />
       
       {/* Ultra-Hidden Admin Access */}

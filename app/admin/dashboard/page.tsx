@@ -253,7 +253,7 @@ export default function AdminDashboard() {
   }
 
   const revenueTrend = getTrendPercentage(data.todayRevenue, data.yesterdayRevenue)
-  const totalBookings = data.todayBookings.confirmed + data.todayBookings.pending + data.todayBookings.completed
+  const totalBookings = (data?.todayBookings?.confirmed || 0) + (data?.todayBookings?.pending || 0) + (data?.todayBookings?.completed || 0)
 
   return (
     <AdminLayout>
@@ -333,15 +333,15 @@ export default function AdminDashboard() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-green-600">Selesai:</span>
-                <span className="font-semibold">{data.todayBookings.completed}</span>
+                <span className="font-semibold">{data?.todayBookings?.completed || 0}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-blue-600">Dikonfirmasi:</span>
-                <span className="font-semibold">{data.todayBookings.confirmed}</span>
+                <span className="font-semibold">{data?.todayBookings?.confirmed || 0}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-yellow-600">Menunggu:</span>
-                <span className="font-semibold">{data.todayBookings.pending}</span>
+                <span className="font-semibold">{data?.todayBookings?.pending || 0}</span>
               </div>
             </div>
           </motion.div>
