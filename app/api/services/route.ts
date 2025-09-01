@@ -219,31 +219,10 @@ export async function GET(request: NextRequest) {
     // Build query
     if (!supabase) throw new Error('Supabase not initialized')
     
-    // Try different possible table names
-    let query = supabase.from('services').select('*')
-    let { data: services, error } = await query.limit(1)
+    // Use correct table name 'Service'
+    let query = supabase.from('Service').select('*')
     
-    // If services table doesn't exist, try other common names
-    if (error && error.message.includes('does not exist')) {
-      console.log('Trying alternative table names...')
-      // Try other possible table names
-      const tableNames = ['service', 'treatments', 'salon_services']
-      for (const tableName of tableNames) {
-        try {
-          const testQuery = supabase.from(tableName).select('*').limit(1)
-          const { data: testData, error: testError } = await testQuery
-          if (!testError && testData) {
-            console.log(`Found data in table: ${tableName}`)
-            query = supabase.from(tableName).select('*')
-            break
-          }
-        } catch (e) {
-          continue
-        }
-      }
-    }
-    
-    // Build the actual query
+    // Build the query with correct field names
     if (active === 'true') {
       query = query.eq('isActive', true)
     }
@@ -256,14 +235,12 @@ export async function GET(request: NextRequest) {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
     }
 
-    const { data: finalServices, error: finalError } = await query.order('name', { ascending: true })
+    const { data: services, error } = await query.order('name', { ascending: true })
 
-    if (finalError) {
-      console.error('Supabase query error:', finalError)
-      throw finalError
+    if (error) {
+      console.error('Supabase query error:', error)
+      throw error
     }
-
-    services = finalServices
 
     // Map database fields to expected format
     const mappedServices = (services || []).map(service => ({

@@ -25,7 +25,7 @@ export async function GET() {
 
     // Simple health check query
     const { data, error } = await supabase
-      .from('services')
+      .from('Service')
       .select('id')
       .limit(1)
 

@@ -29,21 +29,21 @@ const authOptions: NextAuthOptions = {
             throw new Error('Supabase client not initialized')
           }
 
-          // Try to get user from database, but fallback to hardcoded admin if no users table
+          // Try to get admin from database, but fallback to hardcoded admin if no Admin table
           let user = null
           try {
-            const { data: users, error } = await supabase
-              .from('users')
+            const { data: admins, error } = await supabase
+              .from('Admin')
               .select('*')
               .or(`username.eq.${credentials.username},email.eq.${credentials.username}`)
               .eq('isActive', true)
               .limit(1)
 
-            if (!error && users && users.length > 0) {
-              user = users[0]
+            if (!error && admins && admins.length > 0) {
+              user = admins[0]
             }
           } catch (dbError) {
-            console.log('Users table not found, using fallback admin')
+            console.log('Admin table not found, using fallback admin')
           }
 
           // Fallback for admin login if no users table

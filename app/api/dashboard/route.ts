@@ -70,25 +70,25 @@ export async function GET(request: NextRequest) {
     try {
       if (!supabase) throw new Error('Supabase not initialized')
       
-      const { data: users, error: userError } = await supabase
-        .from('users')
+      const { data: admins, error: userError } = await supabase
+        .from('Admin')
         .select('id')
         .limit(1)
 
-      if (!userError && (!users || users.length === 0)) {
+      if (!userError && (!admins || admins.length === 0)) {
         console.log('Creating admin user...')
         const bcrypt = require('bcryptjs')
         const hashedPassword = await bcrypt.hash('admin123', 12)
         
         const { error: insertError } = await supabase
-          .from('users')
+          .from('Admin')
           .insert([
             {
               username: 'admin',
               email: 'admin@salondina.com',
               password: hashedPassword,
               role: 'admin',
-              is_active: true
+              isActive: true
             }
           ])
 
@@ -117,17 +117,17 @@ export async function GET(request: NextRequest) {
       if (!supabase) throw new Error('Supabase not initialized')
       
       const { data: todayTreatments, error: todayError } = await supabase
-        .from('treatments')
+        .from('DailyTreatment')
         .select('*')
         .gte('date', startOfToday.toISOString())
         .lt('date', endOfToday.toISOString())
-        .order('created_at', { ascending: false })
+        .order('createdAt', { ascending: false })
 
       if (todayError) throw todayError
 
       // Monthly treatments from Supabase
       const { data: monthlyTreatments, error: monthlyError } = await supabase
-        .from('treatments')
+        .from('DailyTreatment')
         .select('*')
         .gte('date', startOfMonth.toISOString())
         .lte('date', endOfMonth.toISOString())
@@ -136,23 +136,23 @@ export async function GET(request: NextRequest) {
 
       // Customer statistics
       const { count: totalCustomers, error: customerError } = await supabase
-        .from('customers')
+        .from('Customer')
         .select('*', { count: 'exact', head: true })
 
       if (customerError) throw customerError
 
       const { count: readyForFree, error: loyaltyError } = await supabase
-        .from('customers')
+        .from('Customer')
         .select('*', { count: 'exact', head: true })
-        .eq('loyalty_visits', 3)
+        .eq('loyaltyVisits', 3)
 
       if (loyaltyError) throw loyaltyError
 
       // System statistics
       const { count: activeServices, error: servicesError } = await supabase
-        .from('services')
+        .from('Service')
         .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
+        .eq('isActive', true)
 
       if (servicesError) throw servicesError
 
