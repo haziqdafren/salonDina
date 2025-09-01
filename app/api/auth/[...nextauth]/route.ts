@@ -35,8 +35,7 @@ const authOptions: NextAuthOptions = {
             const { data: admins, error } = await supabase
               .from('Admin')
               .select('*')
-              .or(`username.eq.${credentials.username},email.eq.${credentials.username}`)
-              .eq('isActive', true)
+              .eq('username', credentials.username)
               .limit(1)
 
             if (!error && admins && admins.length > 0) {

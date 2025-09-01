@@ -85,10 +85,8 @@ export async function GET(request: NextRequest) {
           .insert([
             {
               username: 'admin',
-              email: 'admin@salondina.com',
-              password: hashedPassword,
-              role: 'admin',
-              isActive: true
+              name: 'Administrator',
+              password: hashedPassword
             }
           ])
 
@@ -158,20 +156,20 @@ export async function GET(request: NextRequest) {
 
       // Calculate revenues and fees
       const todayRevenue = (todayTreatments || []).reduce((sum, treatment) => {
-        return treatment.is_free_visit ? sum : sum + treatment.price
+        return treatment.isFreeVisit ? sum : sum + treatment.price
       }, 0)
 
       const monthlyRevenue = (monthlyTreatments || []).reduce((sum, treatment) => {
-        return treatment.is_free_visit ? sum : sum + treatment.price
+        return treatment.isFreeVisit ? sum : sum + treatment.price
       }, 0)
 
       const todayTherapistFees = (todayTreatments || []).reduce((sum, treatment) => {
-        if (treatment.is_free_visit) return sum
+        if (treatment.isFreeVisit) return sum
         return sum + Math.round(treatment.price * 0.4) // Assume 40% fee
       }, 0)
 
       const monthlyTherapistFees = (monthlyTreatments || []).reduce((sum, treatment) => {
-        if (treatment.is_free_visit) return sum
+        if (treatment.isFreeVisit) return sum
         return sum + Math.round(treatment.price * 0.4)
       }, 0)
 
@@ -192,14 +190,14 @@ export async function GET(request: NextRequest) {
           treatments: (todayTreatments || []).length,
           revenue: todayRevenue,
           therapistFees: todayTherapistFees,
-          freeTreatments: (todayTreatments || []).filter(t => t.is_free_visit).length,
+          freeTreatments: (todayTreatments || []).filter(t => t.isFreeVisit).length,
           treatments_detail: todayTreatmentsDetail
         },
         monthly: {
           treatments: (monthlyTreatments || []).length,
           revenue: monthlyRevenue,
           therapistFees: monthlyTherapistFees,
-          freeTreatments: (monthlyTreatments || []).filter(t => t.is_free_visit).length
+          freeTreatments: (monthlyTreatments || []).filter(t => t.isFreeVisit).length
         },
         customers: {
           total: totalCustomers || 0,
