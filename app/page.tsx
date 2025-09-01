@@ -22,7 +22,7 @@ export default function Homepage() {
       try {
         const response = await fetch('/api/health')
         const data = await response.json()
-        setDatabaseAvailable(data.database)
+        setDatabaseAvailable(data.database === 'connected')
       } catch (error) {
         console.log('Database check failed:', error)
         setDatabaseAvailable(false)

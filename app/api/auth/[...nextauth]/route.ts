@@ -47,12 +47,13 @@ const authOptions: NextAuthOptions = {
           }
 
           // Fallback for admin login if no users table
-          if (!user && credentials.username === 'admin') {
-            // Allow admin login with hardcoded password for initial setup
-            if (credentials.password === 'admin123') {
+          if (!user && (credentials.username === 'admin' || credentials.username === 'admin_dina')) {
+            // Allow admin login with hardcoded credentials
+            if ((credentials.username === 'admin' && credentials.password === 'admin123') ||
+                (credentials.username === 'admin_dina' && credentials.password === 'DinaAdmin123!')) {
               user = {
-                id: 'admin',
-                username: 'admin',
+                id: credentials.username,
+                username: credentials.username,
                 email: 'admin@salondina.com',
                 role: 'admin',
                 isActive: true
