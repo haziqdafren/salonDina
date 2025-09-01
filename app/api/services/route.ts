@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
     let query = supabase.from('services').select('*')
     
     if (active === 'true') {
-      query = query.eq('is_active', true)
+      query = query.eq('isActive', true)
     }
     
     if (category && category !== 'semua') {
@@ -240,11 +240,25 @@ export async function GET(request: NextRequest) {
       throw error
     }
 
+    // Map database fields to expected format
+    const mappedServices = (services || []).map(service => ({
+      id: service.id,
+      name: service.name,
+      category: service.category,
+      price: service.normalPrice,
+      duration: service.duration,
+      description: service.description,
+      therapist_fee: service.therapistFee,
+      is_active: service.isActive,
+      created_at: service.createdAt,
+      updated_at: service.updatedAt
+    }))
+
     return NextResponse.json({
       success: true,
-      data: services || [],
+      data: mappedServices,
       categories: CATEGORIES,
-      total: services?.length || 0,
+      total: mappedServices.length,
       message: 'Services loaded successfully from Supabase',
       source: 'supabase'
     })
