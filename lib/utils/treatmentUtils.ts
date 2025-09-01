@@ -102,18 +102,18 @@ export const fetchTreatments = async (): Promise<{ treatments: Treatment[], cate
 // Get popular treatments (sorted by popularity)
 export const getPopularTreatments = (treatments: Treatment[], limit: number = 10): Treatment[] => {
   return treatments
-    .filter(treatment => treatment.isActive)
-    .sort((a, b) => b.popularity - a.popularity)
+    .filter(treatment => treatment.is_active)
+    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
     .slice(0, limit)
 }
 
 // Get treatments with promo prices
 export const getPromoTreatments = (treatments: Treatment[]): Treatment[] => {
   return treatments
-    .filter(treatment => treatment.isActive && treatment.promoPrice !== null)
+    .filter(treatment => treatment.is_active && treatment.promoPrice !== null)
     .sort((a, b) => {
-      const discountA = a.normalPrice - (a.promoPrice || 0)
-      const discountB = b.normalPrice - (b.promoPrice || 0)
+      const discountA = (a.normalPrice || a.price || 0) - (a.promoPrice || 0)
+      const discountB = (b.normalPrice || b.price || 0) - (b.promoPrice || 0)
       return discountB - discountA
     })
 }
@@ -121,18 +121,18 @@ export const getPromoTreatments = (treatments: Treatment[]): Treatment[] => {
 // Filter treatments by category
 export const filterTreatmentsByCategory = (treatments: Treatment[], category: string): Treatment[] => {
   if (category === 'all') {
-    return treatments.filter(treatment => treatment.isActive)
+    return treatments.filter(treatment => treatment.is_active)
   }
-  return treatments.filter(treatment => treatment.isActive && treatment.category === category)
+  return treatments.filter(treatment => treatment.is_active && treatment.category === category)
 }
 
 // Search treatments by name or description
 export const searchTreatments = (treatments: Treatment[], searchTerm: string): Treatment[] => {
-  if (!searchTerm) return treatments.filter(treatment => treatment.isActive)
+  if (!searchTerm) return treatments.filter(treatment => treatment.is_active)
   
   const term = searchTerm.toLowerCase()
   return treatments.filter(treatment => 
-    treatment.isActive && (
+    treatment.is_active && (
       treatment.name.toLowerCase().includes(term) ||
       treatment.category.toLowerCase().includes(term) ||
       (treatment.description && treatment.description.toLowerCase().includes(term))

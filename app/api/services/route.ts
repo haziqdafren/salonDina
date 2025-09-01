@@ -247,13 +247,16 @@ export async function GET(request: NextRequest) {
       id: service.id,
       name: service.name,
       category: service.category,
-      price: service.normalPrice,
-      duration: service.duration,
-      description: service.description,
-      therapist_fee: service.therapistFee,
-      is_active: service.isActive,
+      price: service.normalPrice || service.price || 0,
+      normalPrice: service.normalPrice,
+      promoPrice: service.promoPrice,
+      duration: service.duration || 60,
+      description: service.description || '',
+      therapist_fee: service.therapistFee || 0,
+      is_active: service.isActive !== false, // Default to true if not specified
       created_at: service.createdAt,
-      updated_at: service.updatedAt
+      updated_at: service.updatedAt,
+      popularity: service.popularity || 0
     }))
 
     return NextResponse.json({

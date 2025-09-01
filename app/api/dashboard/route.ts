@@ -78,14 +78,14 @@ export async function GET(request: NextRequest) {
       if (!userError && (!admins || admins.length === 0)) {
         console.log('Creating admin user...')
         const bcrypt = require('bcryptjs')
-        const hashedPassword = await bcrypt.hash('admin123', 12)
+        const hashedPassword = await bcrypt.hash('DinaAdmin123!', 12)
         
         const { error: insertError } = await supabase
           .from('Admin')
           .insert([
             {
-              username: 'admin',
-              name: 'Administrator',
+              username: 'admin_dina',
+              name: 'Dina Administrator',
               password: hashedPassword
             }
           ])

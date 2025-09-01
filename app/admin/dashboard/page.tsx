@@ -96,7 +96,7 @@ const mockBusinessData: DashboardData = {
 }
 
 export default function AdminDashboard() {
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   
@@ -111,6 +111,9 @@ export default function AdminDashboard() {
   } = usePagination(data?.recentBookings || [], 5)
 
   useEffect(() => {
+    // Set initial time after component mounts to avoid hydration issues
+    setCurrentTime(new Date())
+    
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
@@ -150,7 +153,7 @@ export default function AdminDashboard() {
                 customer: treatment.customerName || 'Customer',
                 service: treatment.serviceName || 'Service',
                 therapist: treatment.therapistName || 'Therapist',
-                time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                time: treatment.createdAt ? new Date(treatment.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--',
                 status: treatment.isFreeVisit ? 'completed' : 'completed' as const,
                 amount: treatment.price || 0
               })),
@@ -263,19 +266,19 @@ export default function AdminDashboard() {
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-pink-600">
-              {currentTime.toLocaleTimeString('id-ID', { 
+              {currentTime ? currentTime.toLocaleTimeString('id-ID', { 
                 hour: '2-digit', 
                 minute: '2-digit',
                 second: '2-digit'
-              })}
+              }) : '--:--:--'}
             </div>
             <div className="text-sm text-gray-500">
-              {currentTime.toLocaleDateString('id-ID', { 
+              {currentTime ? currentTime.toLocaleDateString('id-ID', { 
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
-              })}
+              }) : 'Loading...'}
             </div>
           </div>
         </div>

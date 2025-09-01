@@ -29,34 +29,32 @@ const authOptions: NextAuthOptions = {
             throw new Error('Supabase client not initialized')
           }
 
-          // Try to get admin from database, but fallback to hardcoded admin if no Admin table
+          // Try to get admin from database first
+          const { data: admins, error } = await supabase
+            .from('Admin')
+            .select('*')
+            .eq('username', credentials.username)
+            .limit(1)
+
           let user = null
-          try {
-            const { data: admins, error } = await supabase
-              .from('Admin')
-              .select('*')
-              .eq('username', credentials.username)
-              .limit(1)
-
-            if (!error && admins && admins.length > 0) {
-              user = admins[0]
-            }
-          } catch (dbError) {
-            console.log('Admin table not found, using fallback admin')
-          }
-
-          // Fallback for admin login if no users table
-          if (!user && (credentials.username === 'admin' || credentials.username === 'admin_dina')) {
-            // Allow admin login with hardcoded credentials
+          if (!error && admins && admins.length > 0) {
+            user = admins[0]
+            console.log('Found user in database:', user.username)
+          } else {
+            console.log('User not found in database, checking fallback credentials')
+            
+            // Fallback for admin login if not found in database
             if ((credentials.username === 'admin' && credentials.password === 'admin123') ||
                 (credentials.username === 'admin_dina' && credentials.password === 'DinaAdmin123!')) {
               user = {
                 id: credentials.username,
                 username: credentials.username,
+                name: 'Administrator',
                 email: 'admin@salondina.com',
                 role: 'admin',
                 isActive: true
               }
+              console.log('Using fallback credentials for:', credentials.username)
             }
           }
 
@@ -76,10 +74,10 @@ const authOptions: NextAuthOptions = {
 
           console.log('User authenticated successfully:', user.username)
           return {
-            id: user.id,
-            name: user.username,
-            email: user.email,
-            role: user.role
+            id: user.id?.toString() || user.username,
+            name: user.name || user.username,
+            email: user.email || 'admin@salondina.com',
+            role: user.role || 'admin'
           }
         } catch (error) {
           console.error('Auth error:', error)
