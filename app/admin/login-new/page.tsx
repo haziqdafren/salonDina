@@ -118,18 +118,10 @@ function LoginForm() {
           </motion.button>
         </form>
 
-        <div className="mt-6 text-center space-y-2">
+        <div className="mt-6 text-center">
           <p className="text-xs text-slate-500">
             Secure access to salon management system
           </p>
-          <div>
-            <a 
-              href="/admin/test-login" 
-              className="text-xs text-blue-600 hover:text-blue-700 underline"
-            >
-              Test Login System
-            </a>
-          </div>
         </div>
       </motion.div>
     </div>

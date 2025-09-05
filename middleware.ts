@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname
-  const isLogin = path.startsWith('/admin/masuk') || path.startsWith('/admin/login-new') || path.startsWith('/admin/test-login')
+  const isLogin = path.startsWith('/admin/masuk') || path.startsWith('/admin/login-new')
   const isApiTest = path.startsWith('/api/test-admin') || path.startsWith('/api/create-admin') || path.startsWith('/api/health')
   const isApiAuth = path.startsWith('/api/auth/')
   
