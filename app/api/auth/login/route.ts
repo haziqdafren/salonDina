@@ -19,6 +19,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get admin user from database
+    if (!supabase) {
+      return NextResponse.json({
+        success: false,
+        message: 'Database connection error'
+      }, { status: 500 })
+    }
+
     const { data: admin, error } = await supabase
       .from('Admin')
       .select('id, username, password, name')

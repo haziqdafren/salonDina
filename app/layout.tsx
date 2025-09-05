@@ -3,7 +3,7 @@ import { Inter, Playfair_Display, Dancing_Script, Kalam } from 'next/font/google
 import { Providers } from './providers'
 import './globals.css'
 
-// Optimize font loading
+// Optimize font loading - v0.2.0 custom auth system
 const inter = Inter({ 
   subsets: ['latin'],
   display: 'swap',
