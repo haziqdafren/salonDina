@@ -164,6 +164,74 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Feedback created successfully:', data[0])
 
+    // 🎯 LOYALTY SYSTEM INTEGRATION
+    // Update customer loyalty counters when feedback is submitted
+    try {
+      console.log('🔄 Updating customer loyalty counters...')
+      
+      // Find customer by phone number
+      const { data: customer, error: customerError } = await client
+        .from('Customer')
+        .select('id, phone, loyaltyVisits, totalVisits, totalSpending')
+        .eq('phone', body.customerPhone)
+        .single()
+
+      if (customerError) {
+        console.error('❌ Customer lookup error:', customerError)
+      } else if (customer) {
+        console.log('👤 Found customer:', customer.name, 'Current loyalty:', customer.loyaltyVisits)
+        
+        // Update loyalty counters
+        const newLoyaltyVisits = Number(customer.loyaltyVisits || 0) + 1
+        const newTotalVisits = Number(customer.totalVisits || 0) + 1
+        
+        // Calculate spending from the treatment (if we can find it)
+        let additionalSpending = 0
+        try {
+          const { data: treatment } = await client
+            .from('DailyTreatment')
+            .select('price, isFreeVisit')
+            .eq('id', body.treatmentId)
+            .single()
+          
+          if (treatment && !treatment.isFreeVisit) {
+            additionalSpending = Number(treatment.price || 0)
+          }
+        } catch (treatmentError) {
+          console.log('⚠️ Could not find treatment for spending calculation:', treatmentError)
+        }
+        
+        const newTotalSpending = Number(customer.totalSpending || 0) + additionalSpending
+        
+        // Update customer record
+        const { error: updateError } = await client
+          .from('Customer')
+          .update({
+            loyaltyVisits: newLoyaltyVisits,
+            totalVisits: newTotalVisits,
+            totalSpending: newTotalSpending,
+            lastVisit: new Date().toISOString()
+          })
+          .eq('id', customer.id)
+
+        if (updateError) {
+          console.error('❌ Customer update error:', updateError)
+        } else {
+          console.log('✅ Customer loyalty updated:', {
+            id: customer.id,
+            newLoyaltyVisits,
+            newTotalVisits,
+            newTotalSpending
+          })
+        }
+      } else {
+        console.log('⚠️ Customer not found for phone:', body.customerPhone)
+      }
+    } catch (loyaltyError) {
+      console.error('❌ Loyalty update error:', loyaltyError)
+      // Don't fail the feedback creation if loyalty update fails
+    }
+
     return NextResponse.json({
       success: true,
       data: data[0],
