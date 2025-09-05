@@ -129,15 +129,22 @@ export async function POST(request: NextRequest) {
       isAnonymous: body.isAnonymous || false
     }
 
-    // Prefer service role for insert to bypass RLS safely (server-side)
-    const client = isServiceRoleConfigured() && supabaseAdmin ? supabaseAdmin : supabase
-    const { data, error } = await client
+    // Use regular supabase client for insert (RLS should allow public inserts)
+    console.log('📝 Attempting to insert feedback with data:', feedbackData)
+    
+    const { data, error } = await supabase
       .from('Feedback')
       .insert([feedbackData])
       .select()
 
     if (error) {
       console.error('❌ Create feedback error:', error)
+      console.error('❌ Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      })
       
       // If table doesn't exist, use mock mode
       if (error.code === 'PGRST204' || error.message.includes('relation "Feedback" does not exist')) {
@@ -159,6 +166,30 @@ export async function POST(request: NextRequest) {
         })
       }
       
+      // For RLS or permission errors, try with service role
+      if (error.code === '42501' || error.message.includes('permission denied') || error.message.includes('RLS')) {
+        console.log('🔄 Permission denied, trying with service role...')
+        
+        if (isServiceRoleConfigured() && supabaseAdmin) {
+          const { data: serviceData, error: serviceError } = await supabaseAdmin
+            .from('Feedback')
+            .insert([feedbackData])
+            .select()
+          
+          if (serviceError) {
+            console.error('❌ Service role insert also failed:', serviceError)
+            throw serviceError
+          }
+          
+          console.log('✅ Feedback created with service role:', serviceData[0])
+          return NextResponse.json({
+            success: true,
+            data: serviceData[0],
+            message: 'Feedback saved successfully (service role)'
+          })
+        }
+      }
+      
       throw error
     }
 
@@ -170,7 +201,7 @@ export async function POST(request: NextRequest) {
       console.log('🔄 Updating customer loyalty counters...')
       
       // Find customer by phone number
-      const { data: customer, error: customerError } = await client
+      const { data: customer, error: customerError } = await supabase
         .from('Customer')
         .select('id, phone, loyaltyVisits, totalVisits, totalSpending')
         .eq('phone', body.customerPhone)
@@ -188,7 +219,7 @@ export async function POST(request: NextRequest) {
         // Calculate spending from the treatment (if we can find it)
         let additionalSpending = 0
         try {
-          const { data: treatment } = await client
+          const { data: treatment } = await supabase
             .from('DailyTreatment')
             .select('price, isFreeVisit')
             .eq('id', body.treatmentId)
@@ -204,7 +235,7 @@ export async function POST(request: NextRequest) {
         const newTotalSpending = Number(customer.totalSpending || 0) + additionalSpending
         
         // Update customer record
-        const { error: updateError } = await client
+        const { error: updateError } = await supabase
           .from('Customer')
           .update({
             loyaltyVisits: newLoyaltyVisits,
