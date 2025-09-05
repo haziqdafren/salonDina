@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
 import AdminLayout from '../../../components/admin/AdminLayout'
-import Pagination, { usePagination } from '../../../components/admin/Pagination'
 
 // Comprehensive dashboard data interface
 interface DashboardData {
@@ -100,15 +98,8 @@ export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   
-  // Pagination for recent bookings
-  const {
-    currentPage: bookingsPage,
-    itemsPerPage: bookingsPerPage, 
-    paginatedData: paginatedBookings,
-    totalItems: totalRecentBookings,
-    handlePageChange: handleBookingsPageChange,
-    handleItemsPerPageChange: handleBookingsPerPageChange
-  } = usePagination(data?.recentBookings || [], 5)
+  // Show recent bookings (limit to 8 for simplicity)
+  const recentBookings = (data?.recentBookings || []).slice(0, 8)
 
   useEffect(() => {
     // Set initial time after component mounts to avoid hydration issues
@@ -453,9 +444,9 @@ export default function AdminDashboard() {
           <div className="p-6 border-b border-pink-100">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-pink-800">Performa Therapist Hari Ini</h2>
-              <Link href="/admin/kelola-therapist" className="salon-btn-secondary text-sm">
-                Kelola Therapist
-              </Link>
+              <div className="text-sm text-pink-600 font-medium">
+                Data Therapist Aktif
+              </div>
             </div>
           </div>
           <div className="p-6">
@@ -494,9 +485,9 @@ export default function AdminDashboard() {
           <div className="p-6 border-b border-pink-100">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-pink-800">Booking Terbaru</h2>
-              <Link href="/admin/bookings" className="salon-btn-secondary text-sm">
-                Lihat Semua
-              </Link>
+              <div className="text-sm text-pink-600 font-medium">
+                Data Booking Harian
+              </div>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -512,7 +503,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedBookings.map((booking) => (
+                {recentBookings.map((booking) => (
                   <tr key={booking.id} className="border-t border-pink-100 hover:bg-pink-25">
                     <td className="py-4 px-6">
                       <div className="font-medium text-gray-800">{booking.customer}</div>
@@ -538,17 +529,10 @@ export default function AdminDashboard() {
             </table>
           </div>
           
-          {/* Recent Bookings Pagination */}
-          <Pagination
-            currentPage={bookingsPage}
-            totalItems={totalRecentBookings}
-            itemsPerPage={bookingsPerPage}
-            onPageChange={handleBookingsPageChange}
-            onItemsPerPageChange={handleBookingsPerPageChange}
-            itemName="booking"
-            loading={loading}
-            itemsPerPageOptions={[5, 10, 15]}
-          />
+          {/* Showing recent bookings (limited to 8) */}
+          <div className="text-sm text-pink-600 text-center py-2">
+            Menampilkan 8 booking terbaru hari ini
+          </div>
         </motion.div>
 
         {/* Monthly Business Overview */}
@@ -592,12 +576,11 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
           >
-            <Link href="/admin/bookings" className="salon-btn-primary flex items-center justify-center gap-2 p-4 w-full">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Booking Baru
-            </Link>
+            <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl p-4 text-center">
+              <div className="text-2xl mb-2">📞</div>
+              <div className="font-semibold">Booking via WhatsApp</div>
+              <div className="text-sm opacity-90 mt-1">Sistem otomatis terintegrasi</div>
+            </div>
           </motion.div>
           
           <motion.div
@@ -605,12 +588,11 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.1 }}
           >
-            <Link href="/admin/kelola-therapist" className="salon-btn-secondary flex items-center justify-center gap-2 p-4 w-full">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              Kelola Therapist
-            </Link>
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl p-4 text-center">
+              <div className="text-2xl mb-2">👥</div>
+              <div className="font-semibold">Manajemen Therapist</div>
+              <div className="text-sm opacity-90 mt-1">5 Therapist aktif</div>
+            </div>
           </motion.div>
 
           <motion.div
@@ -618,12 +600,11 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2 }}
           >
-            <Link href="/admin/pembukuan-harian" className="salon-btn-secondary flex items-center justify-center gap-2 p-4 w-full">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Pembukuan Harian
-            </Link>
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl p-4 text-center">
+              <div className="text-2xl mb-2">📊</div>
+              <div className="font-semibold">Laporan Keuangan</div>
+              <div className="text-sm opacity-90 mt-1">Otomatis dari transaksi</div>
+            </div>
           </motion.div>
 
           <motion.div
@@ -631,12 +612,11 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.3 }}
           >
-            <Link href="/admin/pembukuan-bulanan" className="salon-btn-secondary flex items-center justify-center gap-2 p-4 w-full">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Laporan Bisnis
-            </Link>
+            <div className="bg-gradient-to-r from-purple-500 to-violet-600 text-white rounded-xl p-4 text-center">
+              <div className="text-2xl mb-2">📈</div>
+              <div className="font-semibold">Analisis Bulanan</div>
+              <div className="text-sm opacity-90 mt-1">Trend dan performa</div>
+            </div>
           </motion.div>
         </div>
       </div>

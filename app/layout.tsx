@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Playfair_Display, Dancing_Script, Kalam } from 'next/font/google'
 import { Providers } from './providers'
-import { generateMedanMetaTags, generateLocalBusinessSchema } from '../lib/seo/medanSEO'
 import './globals.css'
 
 // Optimize font loading
@@ -30,27 +29,24 @@ const kalam = Kalam({
   variable: '--font-kalam'
 })
 
-// Generate Medan-optimized SEO metadata
-const medanSEO = generateMedanMetaTags('home')
-
 export const metadata: Metadata = {
-  title: medanSEO.title,
-  description: medanSEO.description,
-  keywords: medanSEO.keywords.split(', '),
+  title: 'Salon Muslimah Dina - Perawatan Kecantikan Islami di Medan',
+  description: 'Salon khusus wanita muslimah di Medan dengan perawatan halal dan suasana nyaman. Buka setiap hari 09:00-18:30 WIB. Facial, hair spa, body treatment dengan produk halal.',
+  keywords: ['salon muslimah medan', 'perawatan wanita islam', 'facial halal medan', 'salon khusus muslimah'],
   authors: [{ name: 'Salon Muslimah Dina' }],
   creator: 'Salon Muslimah Dina',
   publisher: 'Salon Muslimah Dina',
-  metadataBase: new URL('https://salonmuslimah-medan.com'),
+  metadataBase: new URL('https://salon-dina-iota.vercel.app'),
   openGraph: {
     type: 'website',
     locale: 'id_ID',
-    url: medanSEO.ogUrl,
-    title: medanSEO.ogTitle,
-    description: medanSEO.ogDescription,
+    url: 'https://salon-dina-iota.vercel.app',
+    title: 'Salon Muslimah Dina - Perawatan Kecantikan Islami di Medan',
+    description: 'Salon khusus wanita muslimah di Medan dengan perawatan halal dan suasana nyaman. Buka setiap hari 09:00-18:30 WIB.',
     siteName: 'Salon Muslimah Dina',
     images: [
       {
-        url: medanSEO.ogImage,
+        url: '/logo.jpeg',
         width: 1200,
         height: 630,
         alt: 'Salon Muslimah Dina Medan - Buka Setiap Hari',
@@ -59,9 +55,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: medanSEO.twitterTitle,
-    description: medanSEO.twitterDescription,
-    images: [medanSEO.twitterImage],
+    title: 'Salon Muslimah Dina - Perawatan Kecantikan Islami di Medan',
+    description: 'Salon khusus wanita muslimah di Medan dengan perawatan halal dan suasana nyaman.',
+    images: ['/logo.jpeg'],
   },
   robots: {
     index: true,
@@ -81,10 +77,10 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   other: {
-    'geo.region': medanSEO.geoRegion,
-    'geo.placename': medanSEO.geoPlacename,
-    'geo.position': medanSEO.geoPosition,
-    'ICBM': medanSEO.icbm,
+    'geo.region': 'ID-SU',
+    'geo.placename': 'Medan, Sumatera Utara',
+    'geo.position': '3.5952;98.6722',
+    'ICBM': '3.5952, 98.6722',
   }
 }
 
@@ -125,11 +121,24 @@ export default function RootLayout({
         <meta name="geo.position" content="3.5952;98.6722" />
         <meta name="ICBM" content="3.5952, 98.6722" />
         
-        {/* Medan Local Business Structured Data */}
+        {/* Local Business Schema */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(generateLocalBusinessSchema()),
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BeautySalon",
+              "name": "Salon Muslimah Dina",
+              "description": "Salon khusus wanita muslimah di Medan",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Medan",
+                "addressRegion": "Sumatera Utara",
+                "addressCountry": "ID"
+              },
+              "openingHours": "Mo-Su 09:00-18:30",
+              "telephone": "+6287869590802"
+            }),
           }}
         />
       </head>

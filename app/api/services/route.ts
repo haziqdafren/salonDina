@@ -185,9 +185,21 @@ export async function GET(request: NextRequest) {
   const category = searchParams.get('category')
   const search = searchParams.get('search')
 
+  // Debug environment variables for Vercel deployment
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  console.log('🔍 Services API Debug:', {
+    hasSupabaseUrl: !!supabaseUrl,
+    hasSupabaseKey: !!supabaseKey,
+    isConfigured: isSupabaseConfigured(),
+    urlStart: supabaseUrl?.substring(0, 30) + '...',
+    environment: process.env.NODE_ENV || 'unknown'
+  })
+
   // Check if Supabase is configured
   if (!isSupabaseConfigured()) {
-    console.log('Supabase not configured, using fallback data')
+    console.log('⚠️ Supabase not configured, using fallback data')
     let filteredServices = [...FALLBACK_SERVICES]
     
     if (active === 'true') {
@@ -211,7 +223,13 @@ export async function GET(request: NextRequest) {
       categories: CATEGORIES,
       total: filteredServices.length,
       message: 'Using fallback data - Supabase not configured',
-      source: 'fallback'
+      source: 'fallback',
+      debug: {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+        environment: process.env.NODE_ENV || 'unknown',
+        configCheck: isSupabaseConfigured()
+      }
     })
   }
 
@@ -311,6 +329,126 @@ export async function GET(request: NextRequest) {
       message: 'Using fallback data - Supabase error',
       source: 'fallback',
       error: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({
+      success: false,
+      error: 'Database not configured'
+    })
+  }
+
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized')
+    }
+
+    const body = await request.json()
+    console.log('📝 Creating new service:', body)
+
+    const serviceData = {
+      name: body.name || '',
+      category: body.category || 'facial',
+      description: body.description || '',
+      normalPrice: Number(body.normalPrice) || 0,
+      promoPrice: body.promoPrice ? Number(body.promoPrice) : null,
+      duration: Number(body.duration) || 60,
+      therapistFee: Number(body.therapistFee) || 0,
+      isActive: body.isActive !== undefined ? body.isActive : true
+    }
+
+    const { data, error } = await supabase
+      .from('Service')
+      .insert([serviceData])
+      .select()
+
+    if (error) {
+      console.error('❌ Create service error:', error)
+      throw error
+    }
+
+    console.log('✅ Service created successfully:', data[0])
+
+    return NextResponse.json({
+      success: true,
+      data: data[0],
+      message: 'Service created successfully'
+    })
+
+  } catch (error) {
+    console.error('❌ Create service error:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to create service',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({
+      success: false,
+      error: 'Database not configured'
+    })
+  }
+
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized')
+    }
+
+    const body = await request.json()
+    const { id, ...updateData } = body
+    
+    if (!id) {
+      return NextResponse.json({
+        success: false,
+        error: 'Service ID is required for update'
+      })
+    }
+
+    console.log('📝 Updating service:', id, updateData)
+
+    const serviceData = {
+      name: updateData.name || '',
+      category: updateData.category || 'facial',
+      description: updateData.description || '',
+      normalPrice: Number(updateData.normalPrice) || 0,
+      promoPrice: updateData.promoPrice ? Number(updateData.promoPrice) : null,
+      duration: Number(updateData.duration) || 60,
+      therapistFee: Number(updateData.therapistFee) || 0,
+      isActive: updateData.isActive !== undefined ? updateData.isActive : true
+    }
+
+    const { data, error } = await supabase
+      .from('Service')
+      .update(serviceData)
+      .eq('id', id)
+      .select()
+
+    if (error) {
+      console.error('❌ Update service error:', error)
+      throw error
+    }
+
+    console.log('✅ Service updated successfully:', data[0])
+
+    return NextResponse.json({
+      success: true,
+      data: data[0],
+      message: 'Service updated successfully'
+    })
+
+  } catch (error) {
+    console.error('❌ Update service error:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to update service',
+      details: error instanceof Error ? error.message : 'Unknown error'
     })
   }
 }

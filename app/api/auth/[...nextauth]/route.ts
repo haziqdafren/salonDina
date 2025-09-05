@@ -1,120 +1,117 @@
 import NextAuth, { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { supabase, isSupabaseConfigured } from '../../../../lib/supabase'
-import bcrypt from 'bcryptjs'
+import { verifyPassword } from '../../../../lib/auth-utils'
 
 const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      id: 'credentials',
-      name: 'Credentials',
+      name: 'credentials',
       credentials: {
         username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
+        console.log('🚀🚀🚀 AUTHORIZE FUNCTION CALLED! 🚀🚀🚀')
+        console.log('📝 Received credentials:', {
+          username: credentials?.username,
+          hasPassword: !!credentials?.password,
+          timestamp: new Date().toISOString()
+        })
+
         if (!credentials?.username || !credentials?.password) {
-          throw new Error('Username dan password harus diisi')
+          console.log('❌ Missing credentials')
+          return null
         }
 
-        // Enhanced database check
-        if (!isSupabaseConfigured()) {
-          console.error('Supabase not available for authentication')
-          throw new Error('Database not configured')
-        }
+        // Try database authentication first
+        if (isSupabaseConfigured() && supabase) {
+          console.log('✅ Supabase configured - attempting database authentication')
+          
+          try {
+            const { data: admin, error } = await supabase
+              .from('Admin')
+              .select('id, username, password, name')
+              .eq('username', credentials.username)
+              .single()
 
-        try {
-          // Query user from Supabase
-          if (!supabase) {
-            throw new Error('Supabase client not initialized')
-          }
-
-          // Try to get admin from database first
-          const { data: admins, error } = await supabase
-            .from('Admin')
-            .select('*')
-            .eq('username', credentials.username)
-            .limit(1)
-
-          let user = null
-          if (!error && admins && admins.length > 0) {
-            user = admins[0]
-            console.log('Found user in database:', user.username)
-          } else {
-            console.log('User not found in database, checking fallback credentials')
-            
-            // Fallback for admin login if not found in database
-            if ((credentials.username === 'admin' && credentials.password === 'admin123') ||
-                (credentials.username === 'admin_dina' && credentials.password === 'DinaAdmin123!')) {
-              user = {
-                id: credentials.username,
-                username: credentials.username,
-                name: 'Administrator',
-                email: 'admin@salondina.com',
-                role: 'admin',
-                isActive: true
+            if (!error && admin) {
+              console.log('👤 Found admin in database:', admin.username)
+              
+              const isPasswordValid = await verifyPassword(credentials.password, admin.password)
+              
+              if (isPasswordValid) {
+                console.log('✅ Database authentication SUCCESS')
+                return {
+                  id: admin.id.toString(),
+                  name: admin.name,
+                  email: 'admin@salondina.com',
+                  role: 'admin'
+                }
+              } else {
+                console.log('❌ Invalid password for database user')
               }
-              console.log('Using fallback credentials for:', credentials.username)
+            } else {
+              console.log('❌ User not found in database')
             }
+          } catch (dbError) {
+            console.log('❌ Database authentication failed:', dbError)
           }
-
-          if (!user) {
-            console.log('User not found:', credentials.username)
-            throw new Error('Invalid credentials')
-          }
-
-          // Verify password (skip for fallback admin)
-          if (user.password) {
-            const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
-            if (!isPasswordValid) {
-              console.log('Invalid password for user:', credentials.username)
-              throw new Error('Invalid credentials')
-            }
-          }
-
-          console.log('User authenticated successfully:', user.username)
-          return {
-            id: user.id?.toString() || user.username,
-            name: user.name || user.username,
-            email: user.email || 'admin@salondina.com',
-            role: user.role || 'admin'
-          }
-        } catch (error) {
-          console.error('Auth error:', error)
-          
-          // Fallback authentication for development/emergency
-          if (process.env.NODE_ENV === 'development' && 
-              credentials.username === 'admin' && 
-              credentials.password === 'admin123') {
-            console.log('Using fallback admin authentication')
-            return {
-              id: 'fallback-admin',
-              name: 'admin',
-              email: 'admin@salondina.com',
-              role: 'admin'
-            }
-          }
-          
-          throw new Error('Authentication failed')
         }
+        
+        // Fallback to hardcoded credentials
+        console.log('⚠️ Trying fallback authentication...')
+        const fallbackCredentials = [
+          { username: 'admin', password: 'admin123', name: 'Administrator' },
+          { username: 'admin_dina', password: 'DinaAdmin123!', name: 'Dina Admin' }
+        ]
+
+        const fallbackUser = fallbackCredentials.find(
+          cred => cred.username === credentials.username && cred.password === credentials.password
+        )
+
+        if (fallbackUser) {
+          console.log('✅ Fallback authentication SUCCESS for:', fallbackUser.username)
+          return {
+            id: fallbackUser.username,
+            name: fallbackUser.name,
+            email: 'admin@salondina.com',
+            role: 'admin'
+          }
+        }
+        
+        console.log('❌ All authentication methods failed')
+        return null
       }
     })
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 60, // 30 minutes
+    maxAge: 3 * 60 * 60, // 3 hours
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
+  jwt: {
+    maxAge: 3 * 60 * 60, // 3 hours
   },
   callbacks: {
     async jwt({ token, user }) {
+      console.log('🔑 JWT CALLBACK - User:', !!user, 'Token sub:', token.sub)
       if (user) {
         token.role = user.role
+        console.log('🔑 JWT created for user:', user.name, 'Role:', user.role)
+      } else {
+        console.log('🔑 JWT callback without user, existing token sub:', token.sub)
       }
       return token
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.sub!
+      console.log('📋 SESSION CALLBACK - Token sub:', token.sub, 'Session user:', !!session.user)
+      if (token && session.user) {
+        session.user.id = token.sub as string
         session.user.role = token.role as string
+        session.user.name = token.name as string
+        session.user.email = token.email as string
+        console.log('📋 Session created for:', session.user.name, 'Role:', session.user.role)
       }
       return session
     }
@@ -124,11 +121,8 @@ const authOptions: NextAuthOptions = {
     error: '/admin/masuk'
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development'
+  debug: true
 }
 
-// App Router NextAuth handler
 const handler = NextAuth(authOptions)
-
-// Export handlers for GET and POST requests
 export { handler as GET, handler as POST }

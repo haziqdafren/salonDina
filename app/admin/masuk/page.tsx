@@ -17,38 +17,34 @@ export default function AdminLogin() {
   const [attempts, setAttempts] = useState(0)
   const [lockoutTime, setLockoutTime] = useState<number | null>(null)
 
-  // Check for existing session
+  // Ultra-safe session check with detailed logging
   useEffect(() => {
     const checkSession = async () => {
-      const session = await getSession()
-      if (session) {
-        router.push('/admin/dashboard')
+      try {
+        console.log('🔍 Checking existing session on login page...')
+        const session = await getSession()
+        console.log('📋 Session result:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userName: session?.user?.name
+        })
+        
+        if (session?.user) {
+          console.log('✅ Valid session exists, redirecting to dashboard')
+          router.replace('/admin/dashboard')
+        } else {
+          console.log('❌ No valid session found, staying on login page')
+        }
+      } catch (error) {
+        console.error('❌ Session check failed:', error)
       }
     }
     checkSession()
   }, [router])
 
-  // Handle rate limiting
-  useEffect(() => {
-    if (lockoutTime && lockoutTime > Date.now()) {
-      const timer = setTimeout(() => {
-        setLockoutTime(null)
-        setAttempts(0)
-      }, lockoutTime - Date.now())
-      
-      return () => clearTimeout(timer)
-    }
-  }, [lockoutTime])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (lockoutTime && lockoutTime > Date.now()) {
-      const remainingTime = Math.ceil((lockoutTime - Date.now()) / 1000)
-      setError(`Terlalu banyak percobaan gagal. Silakan tunggu ${remainingTime} detik.`)
-      return
-    }
-
     if (!credentials.username.trim() || !credentials.password.trim()) {
       setError('Username dan password harus diisi')
       return
@@ -56,29 +52,41 @@ export default function AdminLogin() {
 
     setIsLoading(true)
     setError('')
+    console.log('🔐 Attempting login for:', credentials.username)
 
     try {
+      console.log('🔐 Starting login process for:', credentials.username.trim())
+      
       const result = await signIn('credentials', {
         username: credentials.username.trim(),
         password: credentials.password,
         redirect: false,
       })
 
+      console.log('📋 Ultra-detailed SignIn result:', {
+        ok: result?.ok,
+        error: result?.error,
+        status: result?.status,
+        url: result?.url
+      })
+
       if (result?.error) {
-        const newAttempts = attempts + 1
-        setAttempts(newAttempts)
+        console.log('❌ Login failed with error:', result.error)
+        setError('Username atau password salah')
+      } else if (result?.ok) {
+        console.log('✅ Login successful! Preparing redirect...')
         
-        if (newAttempts >= 3) {
-          setLockoutTime(Date.now() + 60000) // 1 minute lockout
-          setError('Terlalu banyak percobaan gagal. Sistem dikunci selama 1 menit.')
-        } else {
-          setError('Username atau password salah. Sisa percobaan: ' + (3 - newAttempts))
-        }
+        // Use replace to prevent back button issues and wait for session
+        setTimeout(() => {
+          console.log('➡️ Redirecting to dashboard via router...')
+          router.replace('/admin/dashboard')
+        }, 1000)
       } else {
-        setAttempts(0)
-        router.push('/admin/dashboard')
+        console.log('⚠️ Unexpected login result:', result)
+        setError('Login gagal, silakan coba lagi')
       }
     } catch (err) {
+      console.error('❌ Login exception:', err)
       setError('Terjadi kesalahan sistem. Silakan coba lagi.')
     } finally {
       setIsLoading(false)

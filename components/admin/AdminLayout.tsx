@@ -28,45 +28,79 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sessionWarning, setSessionWarning] = useState(false)
   const [remainingTime, setRemainingTime] = useState('')
 
-  // Navigation items with Indonesian business language - Only existing pages
+  // Navigation items - Complete salon management features
   const navigationItems: NavItem[] = [
     {
       id: 'dashboard',
-      title: 'Beranda',
+      title: 'Dashboard Utama',
       icon: '🏠',
       href: '/admin/dashboard',
-      description: 'Ringkasan dan statistik bisnis',
+      description: 'Ringkasan bisnis dan statistik harian',
     },
     {
       id: 'bookings',
       title: 'Manajemen Booking',
       icon: '📅',
       href: '/admin/bookings',
-      description: 'Kelola janji temu pelanggan',
+      description: 'Kelola jadwal appointment customer',
     },
     {
       id: 'customers',
-      title: 'Data Pelanggan',
+      title: 'Database Customer',
       icon: '👥',
       href: '/admin/customers',
-      description: 'Database dan riwayat pelanggan',
+      description: 'Data customer dan riwayat kunjungan',
     },
     {
       id: 'treatments',
       title: 'Layanan & Harga',
       icon: '💆‍♀️',
       href: '/admin/treatments',
-      description: 'Manajemen treatment dan pricing',
+      description: 'Kelola menu treatment dan harga',
+    },
+    {
+      id: 'therapists',
+      title: 'Manajemen Therapist',
+      icon: '👩‍⚕️',
+      href: '/admin/therapists',
+      description: 'Kelola data therapist salon',
+    },
+    {
+      id: 'daily-transactions',
+      title: 'Laporan Harian',
+      icon: '📝',
+      href: '/admin/daily-transactions',
+      description: 'Input transaksi dan penjualan harian',
+    },
+    {
+      id: 'reports',
+      title: 'Laporan Keuangan',
+      icon: '📊',
+      href: '/admin/reports',
+      description: 'Laporan pendapatan dan keuangan',
+    },
+    {
+      id: 'settings',
+      title: 'Pengaturan Sistem',
+      icon: '⚙️',
+      href: '/admin/settings',
+      description: 'Konfigurasi aplikasi dan sistem',
     }
   ]
 
-  // Session timeout management
+  // Session management - prevent redirect loops
   useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session) {
-      router.push('/admin/masuk')
+    console.log('🔒 AdminLayout session status:', status, 'has session:', !!session)
+    
+    // Only redirect if we're absolutely sure there's no session and not loading
+    if (status === 'unauthenticated') {
+      console.log('🚪 Redirecting to login - Status:', status)
+      router.replace('/admin/masuk')
       return
+    }
+
+    if (session) {
+      console.log('✅ Valid session found for:', session.user?.name)
     }
 
     // Check session expiration (30 minutes)
@@ -101,7 +135,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     window.location.reload()
   }
 
+  // Show loading for initial load
   if (status === 'loading') {
+    console.log('⏳ Showing loading screen - status:', status)
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
@@ -112,7 +148,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
-  if (!session) {
+  // Redirect to login if no session
+  if (status === 'unauthenticated' || !session) {
+    console.log('🚫 No session, returning null - status:', status)
     return null
   }
 
@@ -168,6 +206,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </AnimatePresence>
 
       <div className="flex">
+        {/* Mobile Backdrop */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar - Mobile Responsive */}
         <motion.div
           animate={{ 

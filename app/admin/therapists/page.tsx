@@ -3,31 +3,26 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import AdminLayout from '../../../components/admin/AdminLayout'
-import Pagination, { usePagination } from '../../../components/admin/Pagination'
 
-interface Customer {
+interface Therapist {
   id: number
-  name: string
-  phone: string
-  email?: string
-  address?: string
-  totalVisits: number
-  totalSpending: number
-  loyaltyVisits: number
-  isVip: boolean
-  lastVisit?: string
+  initial: string
+  fullName: string
+  phone?: string
+  isActive: boolean
   createdAt?: string
+  updatedAt?: string
 }
 
 interface ApiResponse {
   success: boolean
-  data: Customer[]
+  data: Therapist[]
   fallback?: string
   message?: string
 }
 
-export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([])
+export default function TherapistsPage() {
+  const [therapists, setTherapists] = useState<Therapist[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -38,103 +33,80 @@ export default function CustomersPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [formData, setFormData] = useState({
-    name: '',
+    initial: '',
+    fullName: '',
     phone: '',
-    email: '',
-    address: '',
-    isVip: false
-  })
-  // Filter and paginate customers
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone.includes(searchTerm)
-    
-    let matchesStatus = true
-    if (statusFilter === 'vip') {
-      matchesStatus = customer.isVip
-    } else if (statusFilter === 'active') {
-      matchesStatus = !customer.isVip && customer.totalVisits > 0
-    } else if (statusFilter === 'inactive') {
-      matchesStatus = customer.totalVisits === 0
-    }
-    
-    return matchesSearch && matchesStatus
+    isActive: true
   })
 
-  // Pagination
-  const {
-    paginatedItems: paginatedCustomers,
-    paginationProps
-  } = usePagination(filteredCustomers, 1, 10)
-
-  // Fetch customers from API
+  // Fetch therapists from API
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchTherapists = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/customers')
+        const response = await fetch('/api/therapists')
         const result: ApiResponse = await response.json()
         
         if (result.success) {
-          setCustomers(result.data || [])
-          console.log('👥 Customers fetched:', result.data?.length || 0)
+          setTherapists(result.data || [])
+          console.log('👩‍⚕️ Therapists fetched:', result.data?.length || 0)
         } else {
-          setError('Failed to fetch customers')
+          setError('Failed to fetch therapists')
         }
       } catch (err) {
-        console.error('Error fetching customers:', err)
-        setError('Network error while fetching customers')
+        console.error('Error fetching therapists:', err)
+        setError('Network error while fetching therapists')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchCustomers()
+    fetchTherapists()
   }, [])
 
-  const getCustomerStatus = (customer: Customer): 'vip' | 'active' | 'inactive' => {
-    if (customer.isVip) return 'vip'
-    if (customer.totalVisits > 0) return 'active'
-    return 'inactive'
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'vip':
-        return 'bg-purple-100 text-purple-700 border border-purple-200'
-      case 'active':
-        return 'bg-green-100 text-green-700 border border-green-200'
-      case 'inactive':
-        return 'bg-gray-100 text-gray-700 border border-gray-200'
-      default:
-        return 'bg-gray-100 text-gray-700'
+  const filteredTherapists = therapists.filter(therapist => {
+    const matchesSearch = therapist.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         therapist.initial.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (therapist.phone && therapist.phone.includes(searchTerm))
+    
+    let matchesStatus = true
+    if (statusFilter === 'active') {
+      matchesStatus = therapist.isActive
+    } else if (statusFilter === 'inactive') {
+      matchesStatus = !therapist.isActive
     }
-  }
+    
+    return matchesSearch && matchesStatus
+  })
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'vip':
-        return 'VIP Customer'
-      case 'active':
-        return 'Aktif'
-      case 'inactive':
-        return 'Tidak Aktif'
-      default:
-        return status
+  const toggleTherapistStatus = async (id: number) => {
+    const therapist = therapists.find(t => t.id === id)
+    if (!therapist) return
+
+    // Optimistically update UI
+    setTherapists(prev =>
+      prev.map(therapist =>
+        therapist.id === id ? { ...therapist, isActive: !therapist.isActive } : therapist
+      )
+    )
+
+    try {
+      // TODO: Add API call to update therapist status when endpoint is available
+      console.log(`Toggle therapist ${id} status to ${!therapist.isActive}`)
+    } catch (error) {
+      console.error('Failed to update therapist status:', error)
+      // Revert optimistic update on error
+      setTherapists(prev =>
+        prev.map(therapist =>
+          therapist.id === id ? { ...therapist, isActive: therapist.isActive } : therapist
+        )
+      )
     }
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount)
   }
 
   // CRUD Functions
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target as HTMLInputElement
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -143,24 +115,22 @@ export default function CustomersPage() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      initial: '',
+      fullName: '',
       phone: '',
-      email: '',
-      address: '',
-      isVip: false
+      isActive: true
     })
     setEditingId(null)
   }
 
-  const startEdit = (customer: Customer) => {
+  const startEdit = (therapist: Therapist) => {
     setFormData({
-      name: customer.name,
-      phone: customer.phone,
-      email: customer.email || '',
-      address: customer.address || '',
-      isVip: customer.isVip
+      initial: therapist.initial,
+      fullName: therapist.fullName,
+      phone: therapist.phone || '',
+      isActive: therapist.isActive
     })
-    setEditingId(customer.id)
+    setEditingId(therapist.id)
     setShowForm(true)
   }
 
@@ -169,7 +139,7 @@ export default function CustomersPage() {
     setSubmitting(true)
 
     try {
-      const url = '/api/customers'
+      const url = '/api/therapists'
       const method = editingId ? 'PUT' : 'POST'
       const submitData = {
         ...(editingId && { id: editingId }),
@@ -187,53 +157,52 @@ export default function CustomersPage() {
       const result = await response.json()
 
       if (result.success) {
-        console.log(`✅ Customer ${editingId ? 'updated' : 'created'} successfully`)
+        console.log(`✅ Therapist ${editingId ? 'updated' : 'created'} successfully`)
         
         if (editingId) {
-          // Update existing customer
-          setCustomers(prev => 
-            prev.map(c => c.id === editingId ? { ...c, ...result.data } : c)
+          // Update existing therapist
+          setTherapists(prev => 
+            prev.map(t => t.id === editingId ? result.data : t)
           )
         } else {
-          // Add new customer
-          setCustomers(prev => [result.data, ...prev])
+          // Add new therapist
+          setTherapists(prev => [result.data, ...prev])
         }
         
         resetForm()
         setShowForm(false)
       } else {
-        alert(`Gagal ${editingId ? 'mengubah' : 'menambah'} customer: ` + result.error)
+        alert(`Gagal ${editingId ? 'mengubah' : 'menambah'} therapist: ` + result.error)
       }
     } catch (error) {
-      console.error(`❌ Error ${editingId ? 'updating' : 'creating'} customer:`, error)
-      alert(`Gagal ${editingId ? 'mengubah' : 'menambah'} customer. Silahkan coba lagi.`)
+      console.error(`❌ Error ${editingId ? 'updating' : 'creating'} therapist:`, error)
+      alert(`Gagal ${editingId ? 'mengubah' : 'menambah'} therapist. Silahkan coba lagi.`)
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus customer ini?')) return
+    if (!confirm('Apakah Anda yakin ingin menghapus therapist ini?')) return
 
     try {
-      const response = await fetch(`/api/customers/${id}`, {
+      const response = await fetch(`/api/therapists/${id}`, {
         method: 'DELETE',
       })
 
       const result = await response.json()
 
       if (result.success) {
-        console.log('✅ Customer deleted successfully')
-        setCustomers(prev => prev.filter(c => c.id !== id))
+        console.log('✅ Therapist deleted successfully')
+        setTherapists(prev => prev.filter(t => t.id !== id))
       } else {
-        alert('Gagal menghapus customer: ' + result.error)
+        alert('Gagal menghapus therapist: ' + result.error)
       }
     } catch (error) {
-      console.error('❌ Error deleting customer:', error)
-      alert('Gagal menghapus customer. Silahkan coba lagi.')
+      console.error('❌ Error deleting therapist:', error)
+      alert('Gagal menghapus therapist. Silahkan coba lagi.')
     }
   }
-
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Belum ada data'
@@ -244,10 +213,8 @@ export default function CustomersPage() {
     })
   }
 
-  const activeCustomers = customers.filter(c => !c.isVip && c.totalVisits > 0).length
-  const vipCustomers = customers.filter(c => c.isVip).length
-  const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpending, 0)
-  const avgSpentPerCustomer = customers.length > 0 ? totalRevenue / customers.length : 0
+  const activeCount = therapists.filter(t => t.isActive).length
+  const inactiveCount = therapists.filter(t => !t.isActive).length
 
   return (
     <AdminLayout>
@@ -255,13 +222,13 @@ export default function CustomersPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-pink-800 mb-2">Database Customer</h1>
-            <p className="text-gray-600">Kelola data customer dan riwayat kunjungan</p>
+            <h1 className="text-3xl font-bold text-pink-800 mb-2">Manajemen Therapist</h1>
+            <p className="text-gray-600">Kelola data therapist dan status keaktifan</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-lg font-bold text-pink-600">
-                {loading ? '...' : customers.length} customer
+                {loading ? '...' : therapists.length} therapist
               </div>
               <div className="text-sm text-gray-500">
                 Total terdaftar
@@ -274,7 +241,7 @@ export default function CustomersPage() {
               }}
               className="px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors font-semibold"
             >
-              + Tambah Customer
+              + Tambah Therapist
             </button>
           </div>
         </div>
@@ -283,7 +250,7 @@ export default function CustomersPage() {
         {loading && (
           <div className="salon-card p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Memuat data customer...</p>
+            <p className="text-gray-600">Memuat data therapist...</p>
           </div>
         )}
 
@@ -301,7 +268,7 @@ export default function CustomersPage() {
           </div>
         )}
 
-        {/* Customer Form */}
+        {/* Therapist Form */}
         {showForm && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -309,36 +276,51 @@ export default function CustomersPage() {
             className="salon-card p-6"
           >
             <h2 className="text-xl font-semibold text-pink-800 mb-6">
-              {editingId ? 'Edit Customer' : 'Tambah Customer Baru'}
+              {editingId ? 'Edit Therapist' : 'Tambah Therapist Baru'}
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Lengkap *
+                    Inisial *
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
+                    name="initial"
+                    value={formData.initial}
                     onChange={handleInputChange}
                     required
+                    maxLength={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                    placeholder="Siti Aminah"
+                    placeholder="F (untuk Fatimah)"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    No. Telepon *
+                    Nama Lengkap *
+                  </label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    placeholder="Fatimah Azzahra"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    No. Telepon
                   </label>
                   <input
                     type="text"
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                     placeholder="08xxxxxxxxx"
                   />
@@ -346,49 +328,21 @@ export default function CustomersPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                    placeholder="customer@email.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status VIP
+                    Status
                   </label>
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        name="isVip"
-                        checked={formData.isVip}
+                        name="isActive"
+                        checked={formData.isActive}
                         onChange={handleInputChange}
                         className="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 focus:ring-2"
                       />
-                      <span className="text-sm text-gray-700">Customer VIP</span>
+                      <span className="text-sm text-gray-700">Therapist Aktif</span>
                     </label>
                   </div>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Alamat
-                </label>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Alamat lengkap customer..."
-                />
               </div>
 
               <div className="flex gap-4">
@@ -399,7 +353,7 @@ export default function CustomersPage() {
                 >
                   {submitting 
                     ? (editingId ? 'Mengubah...' : 'Menyimpan...') 
-                    : (editingId ? 'Ubah Customer' : 'Simpan Customer')
+                    : (editingId ? 'Ubah Therapist' : 'Simpan Therapist')
                   }
                 </button>
                 <button
@@ -435,10 +389,10 @@ export default function CustomersPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[
-            { label: 'Total Customer', value: customers.length, color: 'blue', icon: '👥' },
-            { label: 'Customer Aktif', value: activeCustomers, color: 'green', icon: '✅' },
-            { label: 'VIP Customer', value: vipCustomers, color: 'purple', icon: '⭐' },
-            { label: 'Rata-rata Belanja', value: formatCurrency(avgSpentPerCustomer), color: 'yellow', icon: '💰', isFormatted: true }
+            { label: 'Total Therapist', value: therapists.length, color: 'blue', icon: '👩‍⚕️' },
+            { label: 'Therapist Aktif', value: activeCount, color: 'green', icon: '✅' },
+            { label: 'Tidak Aktif', value: inactiveCount, color: 'red', icon: '❌' },
+            { label: 'Sedang Bertugas', value: activeCount, color: 'purple', icon: '💼' }
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -450,8 +404,8 @@ export default function CustomersPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">{stat.label}</p>
-                  <p className={`text-xl font-bold text-${stat.color}-600 ${stat.isFormatted ? 'text-base' : ''}`}>
-                    {stat.isFormatted ? stat.value : stat.value}
+                  <p className={`text-xl font-bold text-${stat.color}-600`}>
+                    {stat.value}
                   </p>
                 </div>
                 <div className="text-3xl">{stat.icon}</div>
@@ -465,13 +419,13 @@ export default function CustomersPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cari Customer
+                Cari Therapist
               </label>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Cari nama atau nomor HP..."
+                placeholder="Cari nama atau inisial..."
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               />
             </div>
@@ -486,109 +440,102 @@ export default function CustomersPage() {
               >
                 <option value="all">Semua Status</option>
                 <option value="active">Aktif</option>
-                <option value="vip">VIP Customer</option>
                 <option value="inactive">Tidak Aktif</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* Customer Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-pagination-container>
-          {paginatedCustomers.map((customer, index) => (
+        {/* Therapists Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredTherapists.map((therapist, index) => (
             <motion.div
-              key={customer.id}
+              key={therapist.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               className="salon-card p-6"
             >
               <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-bold text-gray-800">{customer.name}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getCustomerStatus(customer))}`}>
-                      {getStatusText(getCustomerStatus(customer))}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {therapist.initial}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800">{therapist.fullName}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      therapist.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {therapist.isActive ? 'Aktif' : 'Tidak Aktif'}
                     </span>
                   </div>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p className="flex items-center gap-2">
-                      <span>📱</span>
-                      <span>{customer.phone}</span>
-                    </p>
-                    {customer.email && (
-                      <p className="flex items-center gap-2">
-                        <span>✉️</span>
-                        <span>{customer.email}</span>
-                      </p>
-                    )}
-                    <p className="flex items-center gap-2">
-                      <span>📍</span>
-                      <span className="line-clamp-2">{customer.address || 'Alamat tidak tersedia'}</span>
-                    </p>
-                  </div>
                 </div>
+                <button
+                  onClick={() => toggleTherapistStatus(therapist.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    therapist.isActive
+                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                      : 'bg-green-100 text-green-600 hover:bg-green-200'
+                  }`}
+                >
+                  {therapist.isActive ? 'Non-aktifkan' : 'Aktifkan'}
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="text-center p-3 bg-pink-50 rounded-lg">
-                  <div className="text-lg font-bold text-pink-600">{customer.totalVisits}</div>
-                  <div className="text-xs text-gray-600">Total Kunjungan</div>
+              {therapist.phone && (
+                <div className="space-y-1 text-sm text-gray-600 mb-4">
+                  <p className="flex items-center gap-2">
+                    <span>📱</span>
+                    <span>{therapist.phone}</span>
+                  </p>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-sm font-bold text-green-600">
-                    {formatCurrency(customer.totalSpending)}
-                  </div>
-                  <div className="text-xs text-gray-600">Total Belanja</div>
-                </div>
-              </div>
+              )}
 
               <div className="border-t border-gray-100 pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Bergabung:</span>
-                  <span className="font-medium">{formatDate(customer.createdAt)}</span>
+                  <span className="font-medium">{formatDate(therapist.createdAt)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Kunjungan Terakhir:</span>
-                  <span className="font-medium">{formatDate(customer.lastVisit)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Loyalty Points:</span>
-                  <span className="font-medium text-pink-600">{customer.loyaltyVisits}/3</span>
+                  <span className="text-gray-600">Update Terakhir:</span>
+                  <span className="font-medium">{formatDate(therapist.updatedAt)}</span>
                 </div>
               </div>
 
               <div className="mt-4 flex gap-2">
-                <button className="flex-1 px-4 py-2 bg-pink-500 text-white text-sm rounded-lg hover:bg-pink-600 transition-colors">
-                  Booking Baru
+                <button 
+                  onClick={() => startEdit(therapist)}
+                  className="flex-1 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  ✏️ Edit
+                </button>
+                <button 
+                  onClick={() => handleDelete(therapist.id)}
+                  className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
+                  title="Hapus therapist"
+                >
+                  🗑️
                 </button>
                 <button className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors">
-                  Riwayat
+                  📅 Jadwal
                 </button>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Pagination */}
-        {!loading && !error && filteredCustomers.length > 0 && (
-          <div className="flex justify-center">
-            <Pagination {...paginationProps} />
-          </div>
-        )}
-
-        {!loading && !error && filteredCustomers.length === 0 && (
+        {!loading && !error && filteredTherapists.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="salon-card p-12 text-center"
           >
-            <div className="text-6xl mb-4">👥</div>
-            <p className="text-gray-500 mb-2">Tidak ada customer ditemukan</p>
+            <div className="text-6xl mb-4">👩‍⚕️</div>
+            <p className="text-gray-500 mb-2">Tidak ada therapist ditemukan</p>
             <p className="text-sm text-gray-400">Coba ubah kata kunci pencarian atau filter status</p>
           </motion.div>
         )}
-        
+
         </>
         )}
       </div>

@@ -1,7 +1,6 @@
-// Professional Admin Pagination Component
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 interface PaginationProps {
@@ -10,11 +9,10 @@ interface PaginationProps {
   itemsPerPage: number
   onPageChange: (page: number) => void
   onItemsPerPageChange?: (itemsPerPage: number) => void
-  showItemsPerPage?: boolean
-  itemsPerPageOptions?: number[]
+  showPageSize?: boolean
+  showItemCount?: boolean
   className?: string
-  loading?: boolean
-  itemName?: string // e.g., "bookings", "customers", "therapists"
+  pageSizeOptions?: number[]
 }
 
 export default function Pagination({
@@ -23,46 +21,43 @@ export default function Pagination({
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
-  showItemsPerPage = true,
-  itemsPerPageOptions = [5, 10, 20, 50],
+  showPageSize = true,
+  showItemCount = true,
   className = '',
-  loading = false,
-  itemName = 'items'
+  pageSizeOptions = [5, 10, 20, 50]
 }: PaginationProps) {
   const totalPages = Math.ceil(totalItems / itemsPerPage)
-  const startItem = Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)
+  const startItem = (currentPage - 1) * itemsPerPage + 1
   const endItem = Math.min(currentPage * itemsPerPage, totalItems)
 
-  // Generate page numbers with ellipsis logic
-  const generatePageNumbers = () => {
+  // Calculate page numbers to display
+  const getPageNumbers = () => {
     const pages: (number | string)[] = []
-    const showEllipsis = totalPages > 7
+    const maxVisible = 5 // Maximum number of page buttons to show
 
-    if (!showEllipsis) {
-      // Show all pages if 7 or fewer
+    if (totalPages <= maxVisible) {
+      // Show all pages if total is small
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i)
       }
     } else {
-      // Complex ellipsis logic
-      if (currentPage <= 4) {
-        // Show: 1 2 3 4 5 ... last
-        for (let i = 1; i <= Math.min(5, totalPages); i++) {
+      // Complex pagination logic
+      if (currentPage <= 3) {
+        // Show first pages
+        for (let i = 1; i <= 4; i++) {
           pages.push(i)
         }
-        if (totalPages > 5) {
-          pages.push('...')
-          pages.push(totalPages)
-        }
-      } else if (currentPage >= totalPages - 3) {
-        // Show: 1 ... last-4 last-3 last-2 last-1 last
+        pages.push('...')
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        // Show last pages
         pages.push(1)
         pages.push('...')
-        for (let i = Math.max(totalPages - 4, 1); i <= totalPages; i++) {
-          if (i > 1) pages.push(i)
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i)
         }
       } else {
-        // Show: 1 ... current-1 current current+1 ... last
+        // Show pages around current page
         pages.push(1)
         pages.push('...')
         for (let i = currentPage - 1; i <= currentPage + 1; i++) {
@@ -76,218 +71,182 @@ export default function Pagination({
     return pages
   }
 
-  const pageNumbers = generatePageNumbers()
-
-  if (totalItems === 0) {
-    return (
-      <div className={`flex items-center justify-center py-6 text-slate-500 ${className}`}>
-        <div className="text-center">
-          <div className="text-2xl mb-2">📂</div>
-          <div className="text-sm">Tidak ada data {itemName} untuk ditampilkan</div>
-        </div>
-      </div>
-    )
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      onPageChange(page)
+    }
   }
 
-  return (
-    <div className={`bg-white border-t border-slate-200 px-4 py-4 sm:px-6 ${className}`}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        
-        {/* Items per page selector - Mobile First */}
-        {showItemsPerPage && onItemsPerPageChange && (
-          <div className="flex items-center gap-2 order-2 sm:order-1">
-            <span className="text-sm text-slate-600 whitespace-nowrap">Tampilkan:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                onItemsPerPageChange(Number(e.target.value))
-                onPageChange(1) // Reset to first page when changing items per page
-              }}
-              disabled={loading}
-              className="min-h-[44px] px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white disabled:bg-slate-100 disabled:cursor-not-allowed"
-            >
-              {itemsPerPageOptions.map(option => (
-                <option key={option} value={option}>
-                  {option} {itemName}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    if (onItemsPerPageChange) {
+      onItemsPerPageChange(newItemsPerPage)
+      // Adjust current page if necessary
+      const newTotalPages = Math.ceil(totalItems / newItemsPerPage)
+      if (currentPage > newTotalPages) {
+        onPageChange(Math.max(1, newTotalPages))
+      }
+    }
+  }
 
-        {/* Page info - Responsive */}
-        <div className="order-1 sm:order-2">
-          <p className="text-sm text-slate-700 text-center sm:text-left">
-            Menampilkan{' '}
-            <span className="font-semibold text-slate-900">{startItem.toLocaleString('id-ID')}</span>
-            {' '}-{' '}
-            <span className="font-semibold text-slate-900">{endItem.toLocaleString('id-ID')}</span>
-            {' '}dari{' '}
-            <span className="font-semibold text-slate-900">{totalItems.toLocaleString('id-ID')}</span>
-            {' '}{itemName}
-          </p>
+  if (totalItems === 0) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`bg-white border border-gray-200 rounded-xl shadow-sm p-4 ${className}`}
+    >
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        {/* Items count and page size selector */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-gray-600">
+          {showItemCount && (
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap">
+                Menampilkan {startItem}-{endItem} dari {totalItems} item
+              </span>
+            </div>
+          )}
+          
+          {showPageSize && onItemsPerPageChange && (
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap">Items per halaman:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
+                className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm min-w-[70px]"
+              >
+                {pageSizeOptions.map(size => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* Pagination controls - Mobile Optimized */}
-        <div className="order-3">
-          <nav className="flex items-center justify-center sm:justify-end">
-            <div className="flex items-center gap-1">
-              
-              {/* First Page Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onPageChange(1)}
-                disabled={currentPage === 1 || loading}
-                className="min-h-[44px] min-w-[44px] p-2 text-slate-500 hover:text-slate-700 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors touch-manipulation flex items-center justify-center"
-                title="Halaman Pertama"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                </svg>
-              </motion.button>
+        {/* Pagination controls */}
+        <div className="flex items-center gap-1">
+          {/* Previous button */}
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors touch-manipulation"
+            aria-label="Halaman sebelumnya"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-              {/* Previous Page Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onPageChange(currentPage - 1)}
-                disabled={currentPage === 1 || loading}
-                className="min-h-[44px] min-w-[44px] p-2 text-slate-500 hover:text-slate-700 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors touch-manipulation flex items-center justify-center"
-                title="Halaman Sebelumnya"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </motion.button>
+          {/* Page numbers */}
+          <div className="flex items-center gap-1 mx-1">
+            {getPageNumbers().map((page, index) => {
+              if (page === '...') {
+                return (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 text-gray-500"
+                  >
+                    ...
+                  </span>
+                )
+              }
 
-              {/* Page Numbers */}
-              <div className="hidden sm:flex items-center gap-1 mx-2">
-                {pageNumbers.map((page, index) => {
-                  if (page === '...') {
-                    return (
-                      <span key={`ellipsis-${index}`} className="px-3 py-2 text-slate-500">
-                        ...
-                      </span>
-                    )
-                  }
+              const pageNumber = page as number
+              const isActive = pageNumber === currentPage
 
-                  const pageNum = page as number
-                  const isActive = pageNum === currentPage
+              return (
+                <button
+                  key={pageNumber}
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg border text-sm font-medium transition-colors touch-manipulation ${
+                    isActive
+                      ? 'bg-pink-500 border-pink-500 text-white shadow-md'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                  aria-label={`Halaman ${pageNumber}`}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {pageNumber}
+                </button>
+              )
+            })}
+          </div>
 
-                  return (
-                    <motion.button
-                      key={pageNum}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => onPageChange(pageNum)}
-                      disabled={loading}
-                      className={`min-h-[44px] min-w-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 touch-manipulation ${
-                        isActive
-                          ? 'bg-slate-900 text-white shadow-lg'
-                          : 'text-slate-700 hover:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed'
-                      }`}
-                    >
-                      {pageNum}
-                    </motion.button>
-                  )
-                })}
-              </div>
-
-              {/* Mobile Page Indicator */}
-              <div className="sm:hidden mx-3 px-4 py-2 bg-slate-100 rounded-lg">
-                <span className="text-sm font-medium text-slate-700">
-                  {currentPage} / {totalPages}
-                </span>
-              </div>
-
-              {/* Next Page Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onPageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || loading}
-                className="min-h-[44px] min-w-[44px] p-2 text-slate-500 hover:text-slate-700 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors touch-manipulation flex items-center justify-center"
-                title="Halaman Selanjutnya"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </motion.button>
-
-              {/* Last Page Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onPageChange(totalPages)}
-                disabled={currentPage === totalPages || loading}
-                className="min-h-[44px] min-w-[44px] p-2 text-slate-500 hover:text-slate-700 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors touch-manipulation flex items-center justify-center"
-                title="Halaman Terakhir"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
-              </motion.button>
-            </div>
-          </nav>
+          {/* Next button */}
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors touch-manipulation"
+            aria-label="Halaman selanjutnya"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Loading Overlay */}
-      {loading && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center"
-        >
-          <div className="flex items-center gap-3 text-slate-600">
-            <div className="w-5 h-5 border-2 border-slate-400 border-t-slate-600 rounded-full animate-spin"></div>
-            <span className="text-sm font-medium">Memuat data...</span>
-          </div>
-        </motion.div>
-      )}
-    </div>
+      {/* Mobile-friendly pagination info */}
+      <div className="sm:hidden mt-3 pt-3 border-t border-gray-200 text-center">
+        <span className="text-xs text-gray-500">
+          Halaman {currentPage} dari {totalPages}
+        </span>
+      </div>
+    </motion.div>
   )
 }
 
-// Helper hook for pagination logic
+// Utility hook for pagination
 export function usePagination<T>(
-  data: T[],
+  items: T[],
+  initialPage: number = 1,
   initialItemsPerPage: number = 10
 ) {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(initialPage)
   const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage)
 
-  // Calculate paginated data
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const paginatedData = data.slice(startIndex, endIndex)
+  const totalItems = items.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
 
-  // Reset to page 1 if current page becomes invalid
-  const totalPages = Math.ceil(data.length / itemsPerPage)
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1)
-  }
+  // Reset to first page if current page becomes invalid
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1)
+    }
+  }, [totalPages, currentPage])
+
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems)
+  const paginatedItems = items.slice(startIndex, endIndex)
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+    setCurrentPage(page)
+    // Scroll to top of list when page changes
+    const element = document.querySelector('[data-pagination-container]')
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }
 
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage)
-    setCurrentPage(1) // Reset to first page
+    setCurrentPage(1) // Reset to first page when changing items per page
   }
 
   return {
     currentPage,
     itemsPerPage,
+    totalItems,
     totalPages,
-    paginatedData,
-    totalItems: data.length,
+    paginatedItems,
     handlePageChange,
     handleItemsPerPageChange,
-    startIndex,
-    endIndex
+    paginationProps: {
+      currentPage,
+      totalItems,
+      itemsPerPage,
+      onPageChange: handlePageChange,
+      onItemsPerPageChange: handleItemsPerPageChange
+    }
   }
 }
