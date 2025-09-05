@@ -14,6 +14,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [attempts, setAttempts] = useState(0)
+  const [lockoutTime, setLockoutTime] = useState(0)
 
   // Check if already logged in
   useEffect(() => {

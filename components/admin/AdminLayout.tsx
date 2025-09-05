@@ -152,9 +152,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
-  // Redirect to login if no session
-  if (status === 'unauthenticated' || !session) {
-    console.log('🚫 No session, returning null - status:', status)
+  // Show loading for authentication check
+  if (!user) {
     return null
   }
 

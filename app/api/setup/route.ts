@@ -5,8 +5,26 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🌱 Starting admin setup...')
     
-    // First update the test user password
-    await updateAdminPassword('test', 'test123')
+    const body = await request.json().catch(() => ({}))
+    
+    if (body.action === 'remove_test_user') {
+      // Remove insecure test user
+      const { supabase } = await import('../../../lib/supabase')
+      if (supabase) {
+        await supabase.from('Admin').delete().eq('username', 'test')
+        console.log('🗑️ Removed insecure test user')
+      }
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Test user removed for security',
+        credentials: {
+          admin_dina: 'DinaAdmin123!',
+          admin: 'SalonDina2024!',
+          super_admin: 'SuperDina2024!'
+        }
+      })
+    }
     
     const success = await createDefaultAdmins()
     
@@ -15,7 +33,6 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Admin users created successfully',
         credentials: {
-          test: 'test123',
           admin_dina: 'DinaAdmin123!',
           admin: 'SalonDina2024!',
           super_admin: 'SuperDina2024!'
