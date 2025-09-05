@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createDefaultAdmins } from '../../../lib/admin-seeder'
+import { createDefaultAdmins, updateAdminPassword } from '../../../lib/admin-seeder'
 
 export async function POST(request: NextRequest) {
   try {
     console.log('🌱 Starting admin setup...')
+    
+    // First update the test user password
+    await updateAdminPassword('test', 'test123')
     
     const success = await createDefaultAdmins()
     
@@ -12,6 +15,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Admin users created successfully',
         credentials: {
+          test: 'test123',
           admin_dina: 'DinaAdmin123!',
           admin: 'SalonDina2024!',
           super_admin: 'SuperDina2024!'
