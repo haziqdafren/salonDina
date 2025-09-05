@@ -7,14 +7,19 @@ const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'salon-dina-fallback-secret-20
 
 export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname
-  const isLogin = path.startsWith('/admin/masuk')
+  const isLogin = path.startsWith('/admin/masuk') || path.startsWith('/admin/login-new')
+  
+  // Redirect old login to new login to bypass NextAuth cache
+  if (path === '/admin/masuk') {
+    return NextResponse.redirect(new URL('/admin/login-new', req.url))
+  }
   
   // Protect admin routes except login
   if (path.startsWith('/admin') && !isLogin) {
     const token = req.cookies.get('auth-token')?.value
     
     if (!token) {
-      const url = new URL('/admin/masuk', req.url)
+      const url = new URL('/admin/login-new', req.url)
       url.searchParams.set('redirect', path)
       return NextResponse.redirect(url)
     }
@@ -22,7 +27,7 @@ export function middleware(req: NextRequest) {
     try {
       jwt.verify(token, JWT_SECRET)
     } catch (error) {
-      const url = new URL('/admin/masuk', req.url)
+      const url = new URL('/admin/login-new', req.url)
       url.searchParams.set('redirect', path)
       return NextResponse.redirect(url)
     }
