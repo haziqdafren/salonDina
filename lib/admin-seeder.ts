@@ -79,7 +79,7 @@ export async function createDefaultAdmins(): Promise<boolean> {
     },
     {
       username: 'admin_dina',
-      password: 'DinaAdmin2024!',
+      password: 'DinaAdmin123!',
       name: 'Dina Admin',
       email: 'dina@salondina.com',
       role: 'admin'
