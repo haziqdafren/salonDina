@@ -14,7 +14,7 @@ const FeedbackDisplay = dynamic(() => import('../components/customer/FeedbackDis
 
 export default function Homepage() {
   const [clickCount, setClickCount] = useState(0)
-  const [databaseAvailable, setDatabaseAvailable] = useState(true)
+  const [databaseAvailable, setDatabaseAvailable] = useState<boolean | null>(null)
   const [homepageSettings, setHomepageSettings] = useState({
     hero: {
       salonName: 'Salon Muslimah Dina',
@@ -55,8 +55,8 @@ export default function Homepage() {
         const data = await response.json()
         setDatabaseAvailable(data.database === 'connected')
       } catch (error) {
-        console.log('Database check failed:', error)
-        setDatabaseAvailable(false)
+        console.log('Database check failed, but attempting to load data anyway:', error)
+        // Don't immediately set to false - let the homepage settings load attempt determine connectivity
       }
     }
     checkDatabase()
@@ -72,15 +72,22 @@ export default function Homepage() {
         if (result.success && result.data) {
           setHomepageSettings(result.data)
           console.log('🏠 Homepage settings loaded:', result.data)
+          // If homepage settings loaded successfully, database is definitely connected
+          if (databaseAvailable === null) {
+            setDatabaseAvailable(true)
+          }
         }
       } catch (error) {
         console.error('Failed to load homepage settings:', error)
-        // Continue with default settings
+        // If this fails and health check also failed, then database is likely disconnected
+        if (databaseAvailable === null) {
+          setDatabaseAvailable(false)
+        }
       }
     }
     // Small delay to ensure smooth loading experience
     setTimeout(loadHomepageSettings, 100)
-  }, [])
+  }, [databaseAvailable])
   const whatsappMessage = "Assalamu'alaikum, saya ingin booking dan bertanya tentang layanan Salon Muslimah Dina di Medan. Apakah masih ada slot hari ini?"
 
   // Logo click handler for admin access
@@ -113,9 +120,21 @@ export default function Homepage() {
     window.open(`https://instagram.com/${instagramHandle}`, '_blank')
   }
 
-  // Show database connection screen if database is not available
-  if (!databaseAvailable) {
+  // Show database connection screen only if explicitly determined to be disconnected
+  if (databaseAvailable === false) {
     return <DatabaseNotConnected />
+  }
+  
+  // Show loading while checking database connection
+  if (databaseAvailable === null) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-slate-300 border-t-slate-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Memuat halaman salon...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
