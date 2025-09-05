@@ -1,8 +1,7 @@
-// Professional Admin Layout with Indonesian Business Navigation
+// Simple Admin Layout with Custom Auth
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -20,13 +19,19 @@ interface NavItem {
   badge?: string
 }
 
+interface User {
+  id: string
+  username: string
+  name: string
+  role: string
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [sessionWarning, setSessionWarning] = useState(false)
-  const [remainingTime, setRemainingTime] = useState('')
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
   // Navigation items - Complete salon management features
   const navigationItems: NavItem[] = [
@@ -95,56 +100,48 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   ]
 
-  // Session management - prevent redirect loops
+  // Authentication check
   useEffect(() => {
-    console.log('🔒 AdminLayout session status:', status, 'has session:', !!session)
-    
-    // Only redirect if we're absolutely sure there's no session and not loading
-    if (status === 'unauthenticated') {
-      console.log('🚪 Redirecting to login - Status:', status)
-      router.replace('/admin/masuk')
-      return
-    }
-
-    if (session) {
-      console.log('✅ Valid session found for:', session.user?.name)
-    }
-
-    // Check session expiration (30 minutes)
-    const checkSession = () => {
-      if (session?.expires) {
-        const expirationTime = new Date(session.expires).getTime()
-        const currentTime = new Date().getTime()
-        const timeLeft = expirationTime - currentTime
-        
-        // Show warning 5 minutes before expiration
-        if (timeLeft <= 5 * 60 * 1000 && timeLeft > 0) {
-          const minutes = Math.floor(timeLeft / 60000)
-          const seconds = Math.floor((timeLeft % 60000) / 1000)
-          setRemainingTime(`${minutes}:${seconds.toString().padStart(2, '0')}`)
-          setSessionWarning(true)
-        } else if (timeLeft <= 0) {
-          signOut({ callbackUrl: '/admin/masuk' })
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.authenticated) {
+            setUser(data.user)
+            console.log('✅ Valid session found for:', data.user?.name)
+          } else {
+            console.log('🚪 No valid authentication, redirecting to login')
+            router.replace('/admin/masuk')
+          }
+        } else {
+          console.log('🚪 Authentication failed, redirecting to login')
+          router.replace('/admin/masuk')
         }
+      } catch (error) {
+        console.error('Authentication check failed:', error)
+        router.replace('/admin/masuk')
+      } finally {
+        setLoading(false)
       }
     }
+    
+    checkAuth()
+  }, [router])
 
-    const interval = setInterval(checkSession, 1000)
-    return () => clearInterval(interval)
-  }, [session, status, router])
-
-  const handleLogout = () => {
-    signOut({ callbackUrl: '/admin/masuk' })
-  }
-
-  const extendSession = () => {
-    // Refresh session by making a request
-    window.location.reload()
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      router.replace('/admin/masuk')
+    } catch (error) {
+      console.error('Logout failed:', error)
+      router.replace('/admin/masuk')
+    }
   }
 
   // Show loading for initial load
-  if (status === 'loading') {
-    console.log('⏳ Showing loading screen - status:', status)
+  if (loading) {
+    console.log('⏳ Showing loading screen - status:', loading)
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
@@ -165,7 +162,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <div className="min-h-screen bg-slate-50">
       {/* Session Warning Modal */}
       <AnimatePresence>
-        {sessionWarning && (
+        {false && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -256,7 +253,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </div>
                   </div>
                   <div className="text-xs text-slate-400">
-                    Selamat datang, {session.user?.name}
+                    Selamat datang, {user?.name}
                   </div>
                 </div>
               ) : (

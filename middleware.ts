@@ -1,15 +1,27 @@
-// Simplified middleware - no NextAuth interference
+// Simple JWT-based middleware 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import jwt from 'jsonwebtoken'
+
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'salon-dina-fallback-secret-2024'
 
 export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname
   const isLogin = path.startsWith('/admin/masuk')
   
   // Protect admin routes except login
-  const token = req.cookies.get('next-auth.session-token') || req.cookies.get('__Secure-next-auth.session-token')
   if (path.startsWith('/admin') && !isLogin) {
+    const token = req.cookies.get('auth-token')?.value
+    
     if (!token) {
+      const url = new URL('/admin/masuk', req.url)
+      url.searchParams.set('redirect', path)
+      return NextResponse.redirect(url)
+    }
+
+    try {
+      jwt.verify(token, JWT_SECRET)
+    } catch (error) {
       const url = new URL('/admin/masuk', req.url)
       url.searchParams.set('redirect', path)
       return NextResponse.redirect(url)

@@ -1,8 +1,7 @@
-// Professional Admin Login Page - Indonesian Business Language
+// Simple & Secure Admin Login Page
 'use client'
 
 import { useState, useEffect } from 'react'
-import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -15,31 +14,24 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [attempts, setAttempts] = useState(0)
-  const [lockoutTime, setLockoutTime] = useState<number | null>(null)
 
-  // Ultra-safe session check with detailed logging
+  // Check if already logged in
   useEffect(() => {
-    const checkSession = async () => {
+    const checkAuth = async () => {
       try {
-        console.log('🔍 Checking existing session on login page...')
-        const session = await getSession()
-        console.log('📋 Session result:', {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userName: session?.user?.name
-        })
-        
-        if (session?.user) {
-          console.log('✅ Valid session exists, redirecting to dashboard')
-          router.replace('/admin/dashboard')
-        } else {
-          console.log('❌ No valid session found, staying on login page')
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.authenticated) {
+            console.log('✅ Already authenticated, redirecting...')
+            router.replace('/admin/dashboard')
+          }
         }
       } catch (error) {
-        console.error('❌ Session check failed:', error)
+        console.log('Not authenticated, staying on login page')
       }
     }
-    checkSession()
+    checkAuth()
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,40 +47,37 @@ export default function AdminLogin() {
     console.log('🔐 Attempting login for:', credentials.username)
 
     try {
-      console.log('🔐 Starting login process for:', credentials.username.trim())
-      
-      const params = new URLSearchParams(window.location.search)
-      const redirectParam = params.get('redirect')
-      const callbackUrl = redirectParam && redirectParam.startsWith('/admin')
-        ? redirectParam
-        : '/admin/dashboard'
-
-      const result = await signIn('credentials', {
-        username: credentials.username.trim(),
-        password: credentials.password,
-        redirect: true,
-        callbackUrl
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: credentials.username.trim(),
+          password: credentials.password
+        })
       })
 
-      console.log('📋 Ultra-detailed SignIn result:', {
-        ok: result?.ok,
-        error: result?.error,
-        status: result?.status,
-        url: result?.url
-      })
+      const result = await response.json()
 
-      if (result?.error) {
-        console.log('❌ Login failed with error:', result.error)
-        setError('Username atau password salah')
-      } else if (result?.ok) {
-        console.log('✅ Login successful! Redirect handled by NextAuth')
+      if (result.success) {
+        console.log('✅ Login successful!')
+        
+        // Get redirect URL from query params
+        const params = new URLSearchParams(window.location.search)
+        const redirectTo = params.get('redirect') || '/admin/dashboard'
+        
+        // Redirect to dashboard
+        router.replace(redirectTo)
       } else {
-        console.log('⚠️ Unexpected login result:', result)
-        setError('Login gagal, silakan coba lagi')
+        console.log('❌ Login failed:', result.message)
+        setError(result.message || 'Username atau password salah')
+        setAttempts(prev => prev + 1)
       }
     } catch (err) {
       console.error('❌ Login exception:', err)
       setError('Terjadi kesalahan sistem. Silakan coba lagi.')
+      setAttempts(prev => prev + 1)
     } finally {
       setIsLoading(false)
     }
