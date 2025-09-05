@@ -169,7 +169,7 @@ export default function CustomersPage() {
     setSubmitting(true)
 
     try {
-      const url = '/api/customers'
+      const url = editingId ? `/api/customers/${editingId}` : '/api/customers'
       const method = editingId ? 'PUT' : 'POST'
       const submitData = {
         ...(editingId && { id: editingId }),
@@ -559,11 +559,30 @@ export default function CustomersPage() {
               </div>
 
               <div className="mt-4 flex gap-2">
-                <button className="flex-1 px-4 py-2 bg-pink-500 text-white text-sm rounded-lg hover:bg-pink-600 transition-colors">
-                  Booking Baru
+                <button
+                  onClick={() => startEdit(customer)}
+                  className="flex-1 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  ✏️ Edit
                 </button>
-                <button className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors">
-                  Riwayat
+                <button 
+                  onClick={() => handleDelete(customer.id)}
+                  className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  🗑️ Hapus
+                </button>
+                <button 
+                  onClick={() => {
+                    // Navigate to booking page with customer pre-filled
+                    window.location.href = `/admin/bookings?customer=${encodeURIComponent(JSON.stringify({
+                      id: customer.id,
+                      name: customer.name,
+                      phone: customer.phone
+                    }))}`
+                  }}
+                  className="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  📅 Booking
                 </button>
               </div>
             </motion.div>

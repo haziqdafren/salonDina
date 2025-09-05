@@ -240,9 +240,9 @@ export async function GET(request: NextRequest) {
     // Use correct table name 'Service'
     let query = supabase.from('Service').select('*')
     
-    // Build the query with correct field names
+    // Build the query with correct field names from database schema
     if (active === 'true') {
-      query = query.eq('isActive', true)
+      query = query.eq('isActive', true) // Database uses 'isActive'
     }
     
     if (category && category !== 'semua') {

@@ -57,10 +57,17 @@ export default function AdminLogin() {
     try {
       console.log('🔐 Starting login process for:', credentials.username.trim())
       
+      const params = new URLSearchParams(window.location.search)
+      const redirectParam = params.get('redirect')
+      const callbackUrl = redirectParam && redirectParam.startsWith('/admin')
+        ? redirectParam
+        : '/admin/dashboard'
+
       const result = await signIn('credentials', {
         username: credentials.username.trim(),
         password: credentials.password,
-        redirect: false,
+        redirect: true,
+        callbackUrl
       })
 
       console.log('📋 Ultra-detailed SignIn result:', {
@@ -74,13 +81,7 @@ export default function AdminLogin() {
         console.log('❌ Login failed with error:', result.error)
         setError('Username atau password salah')
       } else if (result?.ok) {
-        console.log('✅ Login successful! Preparing redirect...')
-        
-        // Use replace to prevent back button issues and wait for session
-        setTimeout(() => {
-          console.log('➡️ Redirecting to dashboard via router...')
-          router.replace('/admin/dashboard')
-        }, 1000)
+        console.log('✅ Login successful! Redirect handled by NextAuth')
       } else {
         console.log('⚠️ Unexpected login result:', result)
         setError('Login gagal, silakan coba lagi')

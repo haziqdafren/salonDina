@@ -156,32 +156,32 @@ export async function GET(request: NextRequest) {
 
       // Calculate revenues and fees
       const todayRevenue = (todayTreatments || []).reduce((sum, treatment) => {
-        return treatment.isFreeVisit ? sum : sum + treatment.price
+        return treatment.isFreeVisit ? sum : sum + Number(treatment.price || 0)
       }, 0)
 
       const monthlyRevenue = (monthlyTreatments || []).reduce((sum, treatment) => {
-        return treatment.isFreeVisit ? sum : sum + treatment.price
+        return treatment.isFreeVisit ? sum : sum + Number(treatment.price || 0)
       }, 0)
 
       const todayTherapistFees = (todayTreatments || []).reduce((sum, treatment) => {
         if (treatment.isFreeVisit) return sum
-        return sum + Math.round(treatment.price * 0.4) // Assume 40% fee
+        return sum + Math.round(Number(treatment.price || 0) * 0.4)
       }, 0)
 
       const monthlyTherapistFees = (monthlyTreatments || []).reduce((sum, treatment) => {
         if (treatment.isFreeVisit) return sum
-        return sum + Math.round(treatment.price * 0.4)
+        return sum + Math.round(Number(treatment.price || 0) * 0.4)
       }, 0)
 
       // Format today's treatments for display
       const todayTreatmentsDetail = (todayTreatments || []).map(treatment => ({
         id: treatment.id,
-        customerName: 'Customer', // You can join with customers table if needed
-        serviceName: 'Service', // You can join with services table if needed
-        price: treatment.price,
-        therapistName: treatment.therapist_name || 'Unknown',
-        isFreeVisit: treatment.is_free_visit,
-        createdAt: treatment.created_at
+        customerName: 'Customer',
+        serviceName: 'Service',
+        price: Number(treatment.price || 0),
+        therapistName: 'Unknown',
+        isFreeVisit: !!treatment.isFreeVisit,
+        createdAt: treatment.createdAt
       }))
 
       // Build real dashboard data

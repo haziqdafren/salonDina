@@ -26,7 +26,7 @@ export async function seedAdminUsers(adminUsers: AdminUser[]): Promise<boolean> 
     for (const admin of adminUsers) {
       // Check if user already exists
       const { data: existingUser } = await supabase
-        .from('admins')
+        .from('Admin')
         .select('username')
         .eq('username', admin.username)
         .limit(1)
@@ -41,14 +41,11 @@ export async function seedAdminUsers(adminUsers: AdminUser[]): Promise<boolean> 
 
       // Insert new admin user
       const { error } = await supabase
-        .from('admins')
+        .from('Admin')
         .insert({
           username: admin.username,
-          password_hash: passwordHash,
-          name: admin.name,
-          email: admin.email,
-          role: admin.role || 'admin',
-          is_active: true
+          password: passwordHash,
+          name: admin.name
         })
 
       if (error) {
@@ -145,10 +142,10 @@ export async function updateAdminPassword(username: string, newPassword: string)
     const passwordHash = await hashPassword(newPassword)
     
     const { error } = await supabase
-      .from('admins')
+      .from('Admin')
       .update({ 
-        password_hash: passwordHash,
-        updated_at: new Date().toISOString()
+        password: passwordHash,
+        updatedAt: new Date().toISOString()
       })
       .eq('username', username)
 

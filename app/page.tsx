@@ -9,12 +9,43 @@ import BookingSystem from '../components/customer/BookingSystem'
 import WhatsAppFloat from '../components/customer/WhatsAppFloat'
 import CustomerNavbar from '../components/customer/CustomerNavbar'
 import DatabaseNotConnected from '../components/DatabaseNotConnected'
+import dynamic from 'next/dynamic'
+const FeedbackDisplay = dynamic(() => import('../components/customer/FeedbackDisplay'), { ssr: false })
 
 export default function Homepage() {
   const [clickCount, setClickCount] = useState(0)
   const [databaseAvailable, setDatabaseAvailable] = useState(true)
+  const [homepageSettings, setHomepageSettings] = useState({
+    hero: {
+      salonName: 'Salon Muslimah Dina',
+      greeting: 'Assalamu\'alaikum, Ukhti Cantik ✨',
+      description: 'Selamat datang di ruang aman kami 🤲\nSalon eksklusif khusus wanita muslimah dengan suasana privat, nyaman, dan sesuai syariat Islam.',
+      islamicQuote: 'بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ'
+    },
+    contact: {
+      address: 'Jl. Perhubungan, Tembung\nPercut Sei Tuan, Kabupaten Deli Serdang\nSumatera Utara 20371\n📍 Dekat SPBU Lau Dendang',
+      phone: '+62 821-7067-7736',
+      whatsapp: '+6282170677736',
+      email: 'medan@salonmuslimah.com',
+      instagram: '@dina_salon_muslimah',
+      operatingHours: {
+        open: '09:00',
+        close: '18:30',
+        description: '7 hari seminggu untuk kemudahan Anda'
+      }
+    },
+    about: {
+      whyChooseTitle: 'Mengapa Memilih Salon Muslimah Dina?',
+      whyChooseSubtitle: 'Keunggulan yang membuat kami berbeda'
+    },
+    services: {
+      title: 'Layanan Istimewa Kami',
+      subtitle: 'Perawatan kecantihan dengan sentuhan Islami',
+      description: 'Menggunakan produk halal pilihan dan therapist muslimah berpengalaman'
+    }
+  })
   const router = useRouter()
-  const whatsappNumber = "+6282170677736"
+  const whatsappNumber = homepageSettings.contact.whatsapp
 
   // Check database availability
   useEffect(() => {
@@ -29,6 +60,26 @@ export default function Homepage() {
       }
     }
     checkDatabase()
+  }, [])
+
+  // Load homepage settings after component mounts (client-side only)
+  useEffect(() => {
+    const loadHomepageSettings = async () => {
+      try {
+        const response = await fetch('/api/homepage-settings')
+        const result = await response.json()
+        
+        if (result.success && result.data) {
+          setHomepageSettings(result.data)
+          console.log('🏠 Homepage settings loaded:', result.data)
+        }
+      } catch (error) {
+        console.error('Failed to load homepage settings:', error)
+        // Continue with default settings
+      }
+    }
+    // Small delay to ensure smooth loading experience
+    setTimeout(loadHomepageSettings, 100)
   }, [])
   const whatsappMessage = "Assalamu'alaikum, saya ingin booking dan bertanya tentang layanan Salon Muslimah Dina di Medan. Apakah masih ada slot hari ini?"
 
@@ -58,7 +109,8 @@ export default function Homepage() {
   }
 
   const handleInstagramClick = () => {
-    window.open('https://instagram.com/dina_salon_muslimah', '_blank')
+    const instagramHandle = homepageSettings.contact.instagram.replace('@', '')
+    window.open(`https://instagram.com/${instagramHandle}`, '_blank')
   }
 
   // Show database connection screen if database is not available
@@ -94,43 +146,10 @@ export default function Homepage() {
         </motion.div>
       </div>
       
-      {/* Floating Decorative Elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <motion.div
-          animate={{ 
-            rotate: [0, 360],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{ 
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute top-20 right-20 w-64 h-64 opacity-10"
-          style={{
-            background: 'conic-gradient(from 0deg, var(--salon-primary), var(--salon-secondary), var(--salon-accent), var(--salon-primary))',
-            borderRadius: '50% 20% 50% 20%',
-            filter: 'blur(20px)'
-          }}
-        />
-        
-        <motion.div
-          animate={{ 
-            rotate: [360, 0],
-            scale: [1.1, 1, 1.1]
-          }}
-          transition={{ 
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute bottom-20 left-20 w-48 h-48 opacity-15"
-          style={{
-            background: 'conic-gradient(from 180deg, var(--salon-secondary), var(--salon-accent), var(--salon-primary), var(--salon-secondary))',
-            borderRadius: '20% 50% 20% 50%',
-            filter: 'blur(15px)'
-          }}
-        />
+      {/* Lightweight Decorative Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-5">
+        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 left-20 w-48 h-48 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
 
       {/* Islamic Greeting */}
@@ -141,7 +160,7 @@ export default function Homepage() {
           transition={{ duration: 0.8 }}
         >
           <div className="bismillah-elegant">
-            بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ
+            {homepageSettings.hero.islamicQuote}
           </div>
           <div className="flex items-center justify-center gap-4 mt-4">
             <div className="w-12 h-px bg-gradient-to-r from-transparent via-salon-islamic to-transparent"></div>
@@ -202,8 +221,8 @@ export default function Homepage() {
                 )}
               </div>
               
-              <h1 className="salon-header-xl mb-6 text-center ornamental-border">
-                Salon Muslimah Dina
+              <h1 className="salon-header-xl mb-6 text-center ornamental-border transition-all duration-300">
+                {homepageSettings.hero.salonName}
               </h1>
               
               {/* Animated Glow Effect */}
@@ -221,22 +240,46 @@ export default function Homepage() {
               />
             </div>
             
-            <p className="font-dancing text-3xl lg:text-4xl mb-8 text-center"
+            <p className="font-dancing text-3xl lg:text-4xl mb-8 text-center transition-opacity duration-300"
                style={{ 
                  background: 'linear-gradient(135deg, var(--salon-primary), var(--salon-accent))',
                  WebkitBackgroundClip: 'text',
                  WebkitTextFillColor: 'transparent',
                  backgroundClip: 'text'
                }}>
-              Assalamu&apos;alaikum, Ukhti Cantik ✨
+              {homepageSettings.hero.greeting}
             </p>
             
-            <p className="font-inter text-lg lg:text-xl text-center max-w-2xl mx-auto mb-8" 
+            <p className="font-inter text-lg lg:text-xl text-center max-w-2xl mx-auto mb-8 transition-opacity duration-300" 
                style={{ color: 'var(--salon-charcoal)' }}>
-              Selamat datang di ruang aman kami 🤲<br/>
-              Salon eksklusif khusus wanita muslimah dengan suasana privat, 
-              nyaman, dan sesuai syariat Islam.
+              {homepageSettings.hero.description.split('\n').map((line, index) => (
+                <span key={index}>
+                  {line}
+                  {index < homepageSettings.hero.description.split('\n').length - 1 && <br />}
+                </span>
+              ))}
             </p>
+
+            {/* Salon Overview Video */}
+            <motion.div
+              className="mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
+              <video 
+                autoPlay 
+                muted 
+                loop 
+                playsInline
+                poster="https://krcezovcddlxyuuvlrny.supabase.co/storage/v1/object/public/homepage-media/hero-poster.jpeg"
+                className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto rounded-2xl shadow-2xl"
+                style={{ maxHeight: '300px' }}
+              >
+                <source src="https://krcezovcddlxyuuvlrny.supabase.co/storage/v1/object/public/homepage-media/hero-1min.mp4" type="video/mp4" />
+                Video browser Anda tidak mendukung pemutaran video.
+              </video>
+            </motion.div>
 
             {/* Ornamental CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
@@ -298,8 +341,8 @@ export default function Homepage() {
             transition={{ duration: 0.8, delay: 0.3 }}
           >
             <div className="relative inline-block mb-8">
-              <h2 className="salon-header-xl mb-4 ornamental-border">
-                Layanan Istimewa Kami
+              <h2 className="salon-header-xl mb-4 ornamental-border transition-opacity duration-300">
+                {homepageSettings.services.title}
               </h2>
               
               {/* Ornamental Underline */}
@@ -332,11 +375,11 @@ export default function Homepage() {
                  WebkitTextFillColor: 'transparent',
                  backgroundClip: 'text'
                }}>
-              Perawatan kecantihan dengan sentuhan Islami
+              {homepageSettings.services.subtitle}
             </p>
             
             <p className="text-salon-charcoal/80 max-w-2xl mx-auto leading-relaxed">
-              Menggunakan produk halal pilihan dan therapist muslimah berpengalaman
+              {homepageSettings.services.description}
             </p>
           </motion.div>
 
@@ -393,7 +436,7 @@ export default function Homepage() {
             ].map((service, index) => (
               <motion.div
                 key={service.title}
-                className="salon-card p-8 cursor-pointer float-animation corner-ornament relative overflow-hidden group"
+                className="salon-card p-8 cursor-pointer corner-ornament relative overflow-hidden group hover:shadow-lg transition-shadow duration-300"
                 style={{ 
                   animationDelay: `${index * 0.2}s`,
                   minHeight: '380px'
@@ -402,9 +445,8 @@ export default function Homepage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 * index }}
                 whileHover={{
-                  y: -10,
-                  scale: 1.02,
-                  transition: { duration: 0.3 }
+                  y: -5,
+                  transition: { duration: 0.2 }
                 }}
               >
                 {/* Special Offer Badge */}
@@ -489,6 +531,211 @@ export default function Homepage() {
         </div>
       </motion.section>
 
+      {/* Treatment Showcase Videos */}
+      <motion.section
+        id="treatment-showcase"
+        className="mb-16 px-4 relative z-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+      >
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="salon-header-xl mb-4 ornamental-border">
+              Lihat Pengalaman Perawatan Kami
+            </h2>
+            <p className="font-dancing text-2xl text-salon-primary mb-4">
+              Rasakan suasana nyaman dan perawatan profesional
+            </p>
+            <p className="text-salon-charcoal/80 max-w-2xl mx-auto">
+              Video langsung dari salon kami - ruang perawatan yang privat dan fasilitas terkini
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+            {/* Japanese Head Spa Treatment Video */}
+            <motion.div
+              className="salon-card p-4 sm:p-6"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <div className="text-center mb-4">
+                <h3 className="salon-header text-lg sm:text-xl mb-2">Japanese Head SPA</h3>
+                <p className="text-salon-charcoal/70 text-xs sm:text-sm mb-4 px-2">
+                  Pengalaman relaksasi kepala dengan teknik Jepang yang menenangkan
+                </p>
+              </div>
+              <video 
+                controls 
+                preload="metadata"
+                poster="https://krcezovcddlxyuuvlrny.supabase.co/storage/v1/object/public/homepage-media/hero-poster.jpeg"
+                className="w-full max-w-sm mx-auto rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                style={{ maxHeight: '200px' }}
+              >
+                <source src="https://krcezovcddlxyuuvlrny.supabase.co/storage/v1/object/public/homepage-media/hero-34s.mp4" type="video/mp4" />
+                Video tidak dapat diputar di browser Anda.
+              </video>
+              <div className="mt-3 text-center">
+                <span className="inline-block bg-salon-primary/10 text-salon-primary px-2 py-1 rounded-full text-xs font-medium">
+                  ⏱️ 34 detik
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Room Treatment Video */}
+            <motion.div
+              className="salon-card p-4 sm:p-6"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <div className="text-center mb-4">
+                <h3 className="salon-header text-lg sm:text-xl mb-2">Ruang Perawatan</h3>
+                <p className="text-salon-charcoal/70 text-xs sm:text-sm mb-4 px-2">
+                  Suasana privat dan nyaman untuk kenyamanan maksimal Anda
+                </p>
+              </div>
+              <video 
+                controls 
+                preload="metadata"
+                poster="https://krcezovcddlxyuuvlrny.supabase.co/storage/v1/object/public/homepage-media/hero-poster.jpeg"
+                className="w-full max-w-sm mx-auto rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                style={{ maxHeight: '200px' }}
+              >
+                <source src="https://krcezovcddlxyuuvlrny.supabase.co/storage/v1/object/public/homepage-media/hero-12s.mp4" type="video/mp4" />
+                Video tidak dapat diputar di browser Anda.
+              </video>
+              <div className="mt-3 text-center">
+                <span className="inline-block bg-salon-secondary/10 text-salon-secondary px-2 py-1 rounded-full text-xs font-medium">
+                  ⏱️ 12 detik
+                </span>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Call to Action */}
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <motion.button
+              className="salon-button-primary"
+              onClick={() => {
+                const bookingSection = document.querySelector('#booking-section')
+                bookingSection?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              🎯 Booking Sekarang untuk Pengalaman Serupa
+            </motion.button>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Customer Feedback Section */}
+      <motion.section
+        id="feedback"
+        className="mb-16 px-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+      >
+        <div className="max-w-6xl mx-auto">
+          <FeedbackDisplay />
+        </div>
+      </motion.section>
+
+      {/* Achievement & Certification Section */}
+      <motion.section
+        id="achievements"
+        className="mb-16 px-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.7 }}
+      >
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="salon-header-xl mb-4 ornamental-border">
+              Prestasi & Sertifikasi
+            </h2>
+            <p className="font-dancing text-2xl text-salon-primary mb-4">
+              Keunggulan yang diakui dan tersertifikasi
+            </p>
+            <p className="text-salon-charcoal/80 max-w-2xl mx-auto">
+              Komitmen kami terhadap kualitas dan profesionalitas dalam setiap layanan
+            </p>
+          </div>
+
+          <motion.div
+            className="salon-card p-4 sm:p-6 lg:p-8 text-center corner-ornament"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <div className="mb-6">
+              <h3 className="salon-header text-lg sm:text-xl lg:text-2xl mb-3">
+                🏆 Sertifikat Perawatan Wajah Dasar
+              </h3>
+              <p className="text-salon-charcoal/70 text-sm sm:text-base mb-6 max-w-2xl mx-auto">
+                Pencapaian dalam mengikuti pelatihan basic skincare facial treatment yang membuktikan komitmen kami terhadap kualitas layanan perawatan wajah profesional.
+              </p>
+            </div>
+            
+            <div className="relative inline-block max-w-full">
+              <img 
+                src="https://krcezovcddlxyuuvlrny.supabase.co/storage/v1/object/public/homepage-media/hero-poster.jpeg"
+                alt="Sertifikat Basic Skincare Facial Treatment - Salon Muslimah Dina"
+                className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg h-auto rounded-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 border-2 sm:border-4 border-salon-gold/20"
+              />
+              
+              {/* Ornamental Frame */}
+              <div className="absolute inset-2 sm:inset-4 border border-salon-accent/30 pointer-events-none rounded-lg" />
+              
+              {/* Achievement Badge */}
+              <div className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 bg-gradient-to-r from-salon-gold to-salon-accent text-white px-2 py-1 sm:px-4 sm:py-2 rounded-full font-bold text-xs sm:text-sm shadow-lg transform rotate-12">
+                ✨ CERTIFIED
+              </div>
+            </div>
+
+            <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+              <div className="bg-salon-surface/50 p-3 sm:p-4 rounded-xl">
+                <div className="text-xl sm:text-2xl mb-2">🎓</div>
+                <h4 className="salon-header-sm mb-1 text-sm sm:text-base">Terlatih</h4>
+                <p className="text-salon-text-muted text-xs sm:text-sm">Pelatihan profesional facial treatment</p>
+              </div>
+              <div className="bg-salon-surface/50 p-3 sm:p-4 rounded-xl">
+                <div className="text-xl sm:text-2xl mb-2">💎</div>
+                <h4 className="salon-header-sm mb-1 text-sm sm:text-base">Bersertifikat</h4>
+                <p className="text-salon-text-muted text-xs sm:text-sm">Standar kualitas yang diakui</p>
+              </div>
+              <div className="bg-salon-surface/50 p-3 sm:p-4 rounded-xl">
+                <div className="text-xl sm:text-2xl mb-2">🤲</div>
+                <h4 className="salon-header-sm mb-1 text-sm sm:text-base">Islami</h4>
+                <p className="text-salon-text-muted text-xs sm:text-sm">Sesuai syariat dan halal</p>
+              </div>
+            </div>
+
+            <motion.div className="mt-4 sm:mt-6">
+              <motion.button
+                className="salon-button-secondary text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
+                onClick={() => {
+                  const servicesSection = document.querySelector('#services')
+                  servicesSection?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                🌟 Lihat Layanan Perawatan Wajah
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.section>
+
       {/* About Us - Why Choose Us */}
       <motion.section
         id="about"
@@ -499,11 +746,11 @@ export default function Homepage() {
       >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="salon-header-lg mb-4">
-              Mengapa Memilih Salon Muslimah Dina?
+            <h2 className="salon-header-lg mb-4 transition-opacity duration-300">
+              {homepageSettings.about.whyChooseTitle}
             </h2>
             <p className="font-dancing text-2xl text-salon-primary">
-              Keunggulan yang membuat kami berbeda
+              {homepageSettings.about.whyChooseSubtitle}
             </p>
           </div>
 
@@ -598,10 +845,12 @@ export default function Homepage() {
                 <div className="text-4xl mb-3">📍</div>
                 <h4 className="salon-header-sm mb-2">Lokasi</h4>
                 <p className="font-inter text-salon-text">
-                  Jl. Perhubungan, Tembung<br />
-                  Percut Sei Tuan, Kabupaten Deli Serdang<br />
-                  Sumatera Utara 20371<br />
-                  <small className="text-salon-accent">📍 Dekat SPBU Lau Dendang</small>
+                  {homepageSettings.contact.address.split('\n').map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < homepageSettings.contact.address.split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
                 </p>
               </div>
               
@@ -609,8 +858,8 @@ export default function Homepage() {
                 <div className="text-4xl mb-3">⏰</div>
                 <h4 className="salon-header-sm mb-2">Jam Buka</h4>
                 <p className="font-inter text-salon-text">
-                  <strong className="text-salon-primary">Setiap Hari: 09:00 - 18:30 WIB</strong><br />
-                  <em className="text-salon-secondary">7 hari seminggu untuk kemudahan Anda</em><br />
+                  <strong className="text-salon-primary">Setiap Hari: {homepageSettings.contact.operatingHours.open} - {homepageSettings.contact.operatingHours.close} WIB</strong><br />
+                  <em className="text-salon-secondary">{homepageSettings.contact.operatingHours.description}</em><br />
                   <small className="text-salon-islamic">*Fleksibel untuk waktu sholat</small>
                 </p>
               </div>
@@ -619,9 +868,9 @@ export default function Homepage() {
                 <div className="text-4xl mb-3">📱</div>
                 <h4 className="salon-header-sm mb-2">Kontak</h4>
                 <p className="font-inter text-salon-text">
-                  WhatsApp: +62 821-7067-7736<br />
-                  Instagram: @dina_salon_muslimah<br />
-                  Email: medan@salonmuslimah.com
+                  WhatsApp: {homepageSettings.contact.phone}<br />
+                  Instagram: {homepageSettings.contact.instagram}<br />
+                  Email: {homepageSettings.contact.email}
                 </p>
               </div>
             </div>

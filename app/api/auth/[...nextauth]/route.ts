@@ -1,6 +1,7 @@
 import NextAuth, { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { supabase, isSupabaseConfigured } from '../../../../lib/supabase'
+import { supabaseAdmin, isServiceRoleConfigured } from '../../../../lib/supabaseAdmin'
 import { verifyPassword } from '../../../../lib/auth-utils'
 
 const authOptions: NextAuthOptions = {
@@ -25,11 +26,12 @@ const authOptions: NextAuthOptions = {
         }
 
         // Try database authentication first
-        if (isSupabaseConfigured() && supabase) {
+        if (isSupabaseConfigured() && (supabase || supabaseAdmin)) {
           console.log('✅ Supabase configured - attempting database authentication')
           
           try {
-            const { data: admin, error } = await supabase
+            const client = (isServiceRoleConfigured() && supabaseAdmin) ? supabaseAdmin : supabase!
+            const { data: admin, error } = await client
               .from('Admin')
               .select('id, username, password, name')
               .eq('username', credentials.username)
@@ -59,26 +61,8 @@ const authOptions: NextAuthOptions = {
           }
         }
         
-        // Fallback to hardcoded credentials
-        console.log('⚠️ Trying fallback authentication...')
-        const fallbackCredentials = [
-          { username: 'admin', password: 'admin123', name: 'Administrator' },
-          { username: 'admin_dina', password: 'DinaAdmin123!', name: 'Dina Admin' }
-        ]
-
-        const fallbackUser = fallbackCredentials.find(
-          cred => cred.username === credentials.username && cred.password === credentials.password
-        )
-
-        if (fallbackUser) {
-          console.log('✅ Fallback authentication SUCCESS for:', fallbackUser.username)
-          return {
-            id: fallbackUser.username,
-            name: fallbackUser.name,
-            email: 'admin@salondina.com',
-            role: 'admin'
-          }
-        }
+        // No fallback credentials in production system
+        console.log('❌ No fallback authentication. Database auth required.')
         
         console.log('❌ All authentication methods failed')
         return null

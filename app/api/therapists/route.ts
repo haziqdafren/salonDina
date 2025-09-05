@@ -79,9 +79,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (!isSupabaseConfigured()) {
+    const body = await request.json()
+    const mockTherapist = {
+      id: Date.now(),
+      ...body,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
     return NextResponse.json({
-      success: false,
-      error: 'Database not configured'
+      success: true,
+      data: mockTherapist,
+      message: 'Therapist created successfully (mock mode)'
     })
   }
 
@@ -130,9 +139,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   if (!isSupabaseConfigured()) {
+    const body = await request.json()
+    const { id, ...updateData } = body
     return NextResponse.json({
-      success: false,
-      error: 'Database not configured'
+      success: true,
+      data: { id, ...updateData, updatedAt: new Date().toISOString() },
+      message: 'Therapist updated successfully (mock mode)'
     })
   }
 

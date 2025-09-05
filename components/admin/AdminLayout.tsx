@@ -80,6 +80,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       description: 'Laporan pendapatan dan keuangan',
     },
     {
+      id: 'feedback',
+      title: 'Manajemen Feedback',
+      icon: '💬',
+      href: '/admin/feedback',
+      description: 'Kelola testimoni dan rating pelanggan',
+    },
+    {
       id: 'settings',
       title: 'Pengaturan Sistem',
       icon: '⚙️',

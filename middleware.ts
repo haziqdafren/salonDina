@@ -4,8 +4,19 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname
+  const isLogin = path.startsWith('/admin/masuk')
   
-  // Only handle URL redirects, no auth protection for now
+  // Protect admin routes except login
+  const token = req.cookies.get('next-auth.session-token') || req.cookies.get('__Secure-next-auth.session-token')
+  if (path.startsWith('/admin') && !isLogin) {
+    if (!token) {
+      const url = new URL('/admin/masuk', req.url)
+      url.searchParams.set('redirect', path)
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // Handle simple redirects
   const redirectMap: Record<string, string> = {
     '/admin/kelola-therapist': '/admin/therapists',
     '/admin/pembukuan-bulanan': '/admin/reports',

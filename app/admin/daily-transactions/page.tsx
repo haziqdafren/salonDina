@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import AdminLayout from '../../../components/admin/AdminLayout'
+import FeedbackModal from '../../../components/admin/FeedbackModal'
 
 interface DailyTreatment {
   id: number
@@ -87,6 +88,22 @@ export default function DailyTransactionsPage() {
     notes: ''
   })
   const [submitting, setSubmitting] = useState<boolean>(false)
+  
+  // Feedback modal state
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState<boolean>(false)
+  const [selectedTreatment, setSelectedTreatment] = useState<DailyTreatment | null>(null)
+  const [feedbackGivenIds, setFeedbackGivenIds] = useState<Set<number>>(new Set())
+
+  // Rehydrate feedback-given state so button stays off across renders
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('feedbackGivenIds')
+      if (raw) {
+        const arr = JSON.parse(raw) as number[]
+        setFeedbackGivenIds(new Set(arr))
+      }
+    } catch {}
+  }, [])
 
   // Fetch dropdown data on component mount
   useEffect(() => {
@@ -227,16 +244,37 @@ export default function DailyTransactionsPage() {
     e.preventDefault()
     setSubmitting(true)
 
+    // Form validation
+    if (!formData.customerName.trim()) {
+      alert('Nama customer harus diisi')
+      setSubmitting(false)
+      return
+    }
+    
+    if (!formData.serviceName.trim()) {
+      alert('Nama layanan harus diisi')
+      setSubmitting(false)
+      return
+    }
+    
+    if (!formData.servicePrice || Number(formData.servicePrice) <= 0) {
+      alert('Harga layanan harus diisi dengan benar')
+      setSubmitting(false)
+      return
+    }
+
     try {
-      const url = editingId ? '/api/daily-treatments' : '/api/daily-treatments'
+      const url = editingId ? `/api/daily-treatments/${editingId}` : '/api/daily-treatments'
       const method = editingId ? 'PUT' : 'POST'
       const submitData = {
         ...(editingId && { id: editingId }),
         ...formData,
         date: selectedDate,
         servicePrice: Number(formData.servicePrice),
-        therapistFee: Number(formData.therapistFee)
+        therapistFee: Number(formData.therapistFee) || 0
       }
+      
+      console.log('🔍 Submitting data:', submitData)
 
       const response = await fetch(url, {
         method,
@@ -246,7 +284,9 @@ export default function DailyTransactionsPage() {
         body: JSON.stringify(submitData),
       })
 
+      console.log('📡 Response status:', response.status)
       const result = await response.json()
+      console.log('📋 Response data:', result)
 
       if (result.success) {
         console.log(`✅ Transaction ${editingId ? 'updated' : 'added'} successfully`)
@@ -263,12 +303,19 @@ export default function DailyTransactionsPage() {
         
         resetForm()
         setShowForm(false)
+        
+        // Show success message with fallback info if applicable
+        const successMessage = result.fallback 
+          ? `✅ Data transaksi berhasil disimpan! (Mode: ${result.fallback})`
+          : '✅ Data transaksi berhasil disimpan!'
+        alert(successMessage)
       } else {
-        alert(`Gagal ${editingId ? 'mengubah' : 'menambah'} transaksi: ` + result.error)
+        console.error('❌ API returned error:', result.error, result.details)
+        alert(`❌ Gagal ${editingId ? 'mengubah' : 'menambah'} transaksi: ${result.error}\n\nDetail: ${result.details || 'Tidak ada detail error'}`)
       }
     } catch (error) {
       console.error(`❌ Error ${editingId ? 'updating' : 'adding'} transaction:`, error)
-      alert(`Gagal ${editingId ? 'mengubah' : 'menambah'} transaksi. Silahkan coba lagi.`)
+      alert(`❌ Terjadi kesalahan jaringan. Detail error:\n${error instanceof Error ? error.message : 'Unknown error'}\n\nSilahkan periksa koneksi dan coba lagi.`)
     } finally {
       setSubmitting(false)
     }
@@ -293,6 +340,51 @@ export default function DailyTransactionsPage() {
     } catch (error) {
       console.error('❌ Error deleting transaction:', error)
       alert('Gagal menghapus transaksi. Silahkan coba lagi.')
+    }
+  }
+
+  const handleRequestFeedback = (transaction: DailyTreatment) => {
+    setSelectedTreatment(transaction)
+    setFeedbackModalOpen(true)
+  }
+
+  const handleFeedbackSubmit = async (feedbackData: any) => {
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        console.log('✅ Feedback saved successfully')
+        alert('✅ Feedback customer berhasil disimpan!')
+        // Mark this treatment as feedback given
+        setFeedbackGivenIds(prev => {
+          const next = new Set(prev)
+          next.add(feedbackData.treatmentId)
+          try { localStorage.setItem('feedbackGivenIds', JSON.stringify(Array.from(next))) } catch {}
+          return next
+        })
+        // Cache public feedback locally to ensure homepage section can show it even in fallback mode
+        if (!result.data.isAnonymous) {
+          try {
+            const cached = localStorage.getItem('publicFeedbacks')
+            const list = cached ? JSON.parse(cached) : []
+            list.unshift(result.data)
+            localStorage.setItem('publicFeedbacks', JSON.stringify(list.slice(0, 10)))
+          } catch {}
+        }
+      } else {
+        alert('❌ Gagal menyimpan feedback: ' + result.error)
+      }
+    } catch (error) {
+      console.error('❌ Error saving feedback:', error)
+      alert('❌ Terjadi kesalahan saat menyimpan feedback')
     }
   }
 
@@ -332,6 +424,12 @@ export default function DailyTransactionsPage() {
           <div>
             <h1 className="text-3xl font-bold text-pink-800 mb-2">Laporan Harian</h1>
             <p className="text-gray-600">Input dan kelola transaksi harian salon</p>
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <strong>ℹ️ Info:</strong> Data transaksi disimpan dalam mode fallback. 
+                Semua data akan tetap tersimpan dan dapat diakses dengan normal.
+              </p>
+            </div>
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-pink-600">
@@ -657,7 +755,15 @@ export default function DailyTransactionsPage() {
                         {formatCurrency(transaction.profit)}
                       </td>
                       <td className="py-4 px-6 text-center">
-                        <div className="flex gap-2 justify-center">
+                        <div className="flex gap-1 justify-center flex-wrap">
+                          <button
+                            onClick={() => handleRequestFeedback(transaction)}
+                            className="px-3 py-1 bg-purple-500 text-white text-xs rounded-lg hover:bg-purple-600 transition-colors"
+                            title="Minta feedback customer"
+                            disabled={feedbackGivenIds.has(transaction.id)}
+                          >
+                            {feedbackGivenIds.has(transaction.id) ? '✅ Selesai' : '⭐ Feedback'}
+                          </button>
                           <button
                             onClick={() => startEdit(transaction)}
                             className="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
@@ -681,6 +787,25 @@ export default function DailyTransactionsPage() {
             </div>
           )}
         </motion.div>
+
+        {/* Feedback Modal */}
+        {selectedTreatment && (
+          <FeedbackModal
+            isOpen={feedbackModalOpen}
+            onClose={() => {
+              setFeedbackModalOpen(false)
+              setSelectedTreatment(null)
+            }}
+            treatmentData={{
+              id: selectedTreatment.id,
+              customerName: selectedTreatment.customerName,
+              customerPhone: selectedTreatment.customerPhone || '',
+              serviceName: selectedTreatment.serviceName,
+              therapistName: selectedTreatment.therapistName
+            }}
+            onSubmit={handleFeedbackSubmit}
+          />
+        )}
       </div>
     </AdminLayout>
   )

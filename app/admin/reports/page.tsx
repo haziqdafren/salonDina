@@ -37,22 +37,34 @@ export default function ReportsPage() {
   const [error, setError] = useState<string>('')
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly')
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
-
-  // Mock data for now
-  const mockReportData: ReportData = {
-    daily: { revenue: 850000, treatments: 12, customers: 8, therapistFees: 340000 },
-    weekly: { revenue: 4250000, treatments: 68, customers: 45, therapistFees: 1700000 },
-    monthly: { revenue: 18750000, treatments: 285, customers: 180, therapistFees: 7500000 },
-    yearly: { revenue: 225000000, treatments: 3420, customers: 2160, therapistFees: 90000000 }
+  const [mbLoading, setMbLoading] = useState<boolean>(false)
+  const [monthlyRows, setMonthlyRows] = useState<any[]>([])
+  const [editingRow, setEditingRow] = useState<any | null>(null)
+  const exportCsv = () => {
+    const headers = ['id','month','year','totalRevenue','totalTherapistFees','totalTreatments','freeTreatments']
+    const rows = monthlyRows.map((r) => [r.id, r.month, r.year, r.totalRevenue, r.totalTherapistFees, r.totalTreatments, r.freeTreatments])
+    const csv = [headers.join(','), ...rows.map(cols => cols.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `laporan-keuangan-${new Date().toISOString().slice(0,10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   useEffect(() => {
     const fetchReportData = async () => {
       try {
         setLoading(true)
-        // TODO: Replace with actual API call
-        await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-        setReportData(mockReportData)
+        const params = new URLSearchParams()
+        params.set('period', selectedPeriod)
+        params.set('date', selectedDate)
+        const res = await fetch(`/api/reports?${params.toString()}`)
+        if (!res.ok) throw new Error('Request failed')
+        const json = await res.json()
+        if (!json.success) throw new Error(json.error || 'Failed to load report data')
+        setReportData(json.data)
       } catch (err) {
         console.error('Error fetching report data:', err)
         setError('Failed to load report data')
@@ -63,6 +75,49 @@ export default function ReportsPage() {
 
     fetchReportData()
   }, [selectedPeriod, selectedDate])
+
+  // Load MonthlyBookkeeping rows for quick CRUD
+  useEffect(() => {
+    const loadMB = async () => {
+      try {
+        setMbLoading(true)
+        const res = await fetch('/api/monthly-bookkeeping')
+        const json = await res.json()
+        if (json.success) setMonthlyRows(json.data)
+      } finally {
+        setMbLoading(false)
+      }
+    }
+    loadMB()
+  }, [])
+
+  const upsertMonthly = async (payload: any) => {
+    const isEdit = !!payload.id
+    const url = '/api/monthly-bookkeeping'
+    const res = await fetch(url, {
+      method: isEdit ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const json = await res.json()
+    if (json.success) {
+      setMonthlyRows(prev => {
+        if (isEdit) {
+          return prev.map(r => (r.id === json.data.id ? json.data : r))
+        }
+        return [json.data, ...prev]
+      })
+      setEditingRow(null)
+    }
+  }
+
+  const deleteMonthly = async (id: number) => {
+    const res = await fetch(`/api/monthly-bookkeeping?id=${id}`, { method: 'DELETE' })
+    const json = await res.json()
+    if (json.success) {
+      setMonthlyRows(prev => prev.filter(r => r.id !== id))
+    }
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -140,6 +195,84 @@ export default function ReportsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Monthly Bookkeeping CRUD */}
+        <div className="salon-card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-pink-800">Pembukuan Bulanan</h2>
+            <div className="flex gap-2">
+              <button
+                className="px-3 py-2 rounded-lg bg-gray-100 text-gray-800 text-sm"
+                onClick={exportCsv}
+              >
+                Export CSV
+              </button>
+              <button
+                className="px-3 py-2 rounded-lg bg-pink-600 text-white text-sm"
+                onClick={() => setEditingRow({ id: null, month: new Date().getMonth() + 1, year: new Date().getFullYear(), totalRevenue: 0, totalTherapistFees: 0, totalTreatments: 0, freeTreatments: 0 })}
+              >
+                + Tambah
+              </button>
+            </div>
+          </div>
+
+          {editingRow && (
+            <div className="mb-4 grid grid-cols-2 md:grid-cols-6 gap-3">
+              <input className="input input-bordered" type="number" placeholder="Bulan" value={editingRow.month}
+                     onChange={e => setEditingRow({ ...editingRow, month: Number(e.target.value) })} />
+              <input className="input input-bordered" type="number" placeholder="Tahun" value={editingRow.year}
+                     onChange={e => setEditingRow({ ...editingRow, year: Number(e.target.value) })} />
+              <input className="input input-bordered" type="number" placeholder="Pendapatan" value={editingRow.totalRevenue}
+                     onChange={e => setEditingRow({ ...editingRow, totalRevenue: Number(e.target.value) })} />
+              <input className="input input-bordered" type="number" placeholder="Fee Therapist" value={editingRow.totalTherapistFees}
+                     onChange={e => setEditingRow({ ...editingRow, totalTherapistFees: Number(e.target.value) })} />
+              <input className="input input-bordered" type="number" placeholder="Total Treatment" value={editingRow.totalTreatments}
+                     onChange={e => setEditingRow({ ...editingRow, totalTreatments: Number(e.target.value) })} />
+              <input className="input input-bordered" type="number" placeholder="Gratis" value={editingRow.freeTreatments}
+                     onChange={e => setEditingRow({ ...editingRow, freeTreatments: Number(e.target.value) })} />
+              <div className="col-span-2 md:col-span-6 flex gap-2">
+                <button className="px-3 py-2 rounded-lg bg-green-600 text-white text-sm" onClick={() => upsertMonthly(editingRow)}>
+                  {editingRow.id ? 'Simpan Perubahan' : 'Simpan'}
+                </button>
+                <button className="px-3 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm" onClick={() => setEditingRow(null)}>
+                  Batal
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px]">
+              <thead className="bg-pink-50">
+                <tr>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-pink-800">Bulan</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-pink-800">Tahun</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-pink-800">Pendapatan</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-pink-800">Fee Therapist</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-pink-800">Total Treatment</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-pink-800">Gratis</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-pink-800">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyRows.map(row => (
+                  <tr key={row.id} className="border-t border-pink-100">
+                    <td className="py-3 px-4">{row.month}</td>
+                    <td className="py-3 px-4">{row.year}</td>
+                    <td className="py-3 px-4">{new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(row.totalRevenue || 0)}</td>
+                    <td className="py-3 px-4">{new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(row.totalTherapistFees || 0)}</td>
+                    <td className="py-3 px-4">{row.totalTreatments}</td>
+                    <td className="py-3 px-4">{row.freeTreatments}</td>
+                    <td className="py-3 px-4 flex gap-2">
+                      <button className="px-3 py-1 rounded-lg bg-blue-600 text-white text-xs" onClick={() => setEditingRow(row)}>Edit</button>
+                      <button className="px-3 py-1 rounded-lg bg-red-600 text-white text-xs" onClick={() => deleteMonthly(row.id)}>Hapus</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -298,26 +431,7 @@ export default function ReportsPage() {
           </div>
         </motion.div>
 
-        {/* Export Options */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="salon-card p-6"
-        >
-          <h2 className="text-xl font-semibold text-pink-800 mb-6">Export Laporan</h2>
-          <div className="flex flex-wrap gap-4">
-            <button className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-              📊 Export ke Excel
-            </button>
-            <button className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-              📄 Export ke PDF
-            </button>
-            <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-              📧 Email Laporan
-            </button>
-          </div>
-        </motion.div>
+        
 
         </>
         )}

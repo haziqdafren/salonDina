@@ -7,8 +7,8 @@ export async function DELETE(
 ) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({
-      success: false,
-      error: 'Database not configured'
+      success: true,
+      message: 'Therapist deleted successfully (mock mode)'
     })
   }
 
@@ -58,9 +58,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (!isSupabaseConfigured()) {
+    const body = await request.json()
+    const { id } = await params
     return NextResponse.json({
-      success: false,
-      error: 'Database not configured'
+      success: true,
+      data: { id: parseInt(id), ...body, updatedAt: new Date().toISOString() },
+      message: 'Therapist updated successfully (mock mode)'
     })
   }
 

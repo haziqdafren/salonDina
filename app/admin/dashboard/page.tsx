@@ -44,54 +44,6 @@ interface DashboardData {
   }
 }
 
-// Mock comprehensive business data
-const mockBusinessData: DashboardData = {
-  todayRevenue: 2850000,
-  yesterdayRevenue: 2650000,
-  todayBookings: {
-    confirmed: 12,
-    pending: 3,
-    completed: 8
-  },
-  newCustomers: 4,
-  monthlyNewCustomers: 45,
-  popularTreatment: {
-    name: 'Facial Brightening',
-    count: 6
-  },
-  therapistTips: 450000,
-  activeTherapists: 5,
-  therapistList: [
-    { initial: 'R', name: 'Rina Sari', todayEarnings: 180000, todayTreatments: 4 },
-    { initial: 'A', name: 'Aisha Putri', todayEarnings: 165000, todayTreatments: 3 },
-    { initial: 'E', name: 'Elisa Rahman', todayEarnings: 150000, todayTreatments: 3 },
-    { initial: 'T', name: 'Tina Wulandari', todayEarnings: 195000, todayTreatments: 4 },
-    { initial: 'S', name: 'Sari Indah', todayEarnings: 120000, todayTreatments: 2 }
-  ],
-  recentBookings: [
-    { id: 1, customer: 'Siti Aminah', service: 'Facial Premium', therapist: 'R', time: '09:00', status: 'completed', amount: 250000 },
-    { id: 2, customer: 'Fatimah Zahra', service: 'Hair Spa', therapist: 'A', time: '10:30', status: 'completed', amount: 150000 },
-    { id: 3, customer: 'Khadijah Ahmad', service: 'Body Massage', therapist: 'E', time: '11:00', status: 'in-progress', amount: 200000 },
-    { id: 4, customer: 'Maryam Husna', service: 'Paket Pengantin', therapist: 'T', time: '14:00', status: 'confirmed', amount: 1500000 },
-    { id: 5, customer: 'Zahra Fitri', service: 'Manicure Pedicure', therapist: 'S', time: '15:30', status: 'pending', amount: 120000 },
-    { id: 6, customer: 'Aisyah Batubara', service: 'Perawatan Wajah', therapist: 'R', time: '08:30', status: 'completed', amount: 180000 },
-    { id: 7, customer: 'Rahma Sari', service: 'Body Scrub', therapist: 'A', time: '09:15', status: 'completed', amount: 220000 },
-    { id: 8, customer: 'Nurul Hasanah', service: 'Hair Treatment', therapist: 'E', time: '10:00', status: 'in-progress', amount: 175000 },
-    { id: 9, customer: 'Salma Dewi', service: 'Manicure', therapist: 'T', time: '11:45', status: 'confirmed', amount: 95000 },
-    { id: 10, customer: 'Latifah Ahmad', service: 'Pedicure', therapist: 'S', time: '13:00', status: 'pending', amount: 85000 },
-    { id: 11, customer: 'Khadijah Nasution', service: 'Facial Acne', therapist: 'R', time: '14:30', status: 'completed', amount: 195000 },
-    { id: 12, customer: 'Aminah Lubis', service: 'Deep Cleansing', therapist: 'A', time: '15:00', status: 'confirmed', amount: 165000 },
-    { id: 13, customer: 'Maryam Siregar', service: 'Aromatherapi', therapist: 'E', time: '16:00', status: 'pending', amount: 210000 },
-    { id: 14, customer: 'Fatimah Harahap', service: 'Hot Stone Massage', therapist: 'T', time: '16:45', status: 'confirmed', amount: 275000 },
-    { id: 15, customer: 'Zainab Pohan', service: 'Full Body Massage', therapist: 'S', time: '17:30', status: 'pending', amount: 295000 }
-  ],
-  monthlyStats: {
-    totalRevenue: 85400000,
-    totalBookings: 342,
-    averagePerBooking: 249706,
-    therapistFees: 17080000
-  }
-}
 
 export default function AdminDashboard() {
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
@@ -158,16 +110,51 @@ export default function AdminDashboard() {
             setData(mappedData)
           } else {
             console.error('Failed to fetch dashboard data:', result.error)
-            // Fallback to mock data if API fails
-            setData(mockBusinessData)
+            setData({
+              todayRevenue: 0,
+              yesterdayRevenue: 0,
+              todayBookings: { confirmed: 0, pending: 0, completed: 0 },
+              newCustomers: 0,
+              monthlyNewCustomers: 0,
+              popularTreatment: { name: 'Data tidak tersedia', count: 0 },
+              therapistTips: 0,
+              activeTherapists: 0,
+              therapistList: [],
+              recentBookings: [],
+              monthlyStats: { totalRevenue: 0, totalBookings: 0, averagePerBooking: 0, therapistFees: 0 }
+            })
           }
         } else {
           console.error('Dashboard API request failed')
-          setData(mockBusinessData)
+          setData({
+            todayRevenue: 0,
+            yesterdayRevenue: 0,
+            todayBookings: { confirmed: 0, pending: 0, completed: 0 },
+            newCustomers: 0,
+            monthlyNewCustomers: 0,
+            popularTreatment: { name: 'Data tidak tersedia', count: 0 },
+            therapistTips: 0,
+            activeTherapists: 0,
+            therapistList: [],
+            recentBookings: [],
+            monthlyStats: { totalRevenue: 0, totalBookings: 0, averagePerBooking: 0, therapistFees: 0 }
+          })
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
-        setData(mockBusinessData)
+        setData({
+          todayRevenue: 0,
+          yesterdayRevenue: 0,
+          todayBookings: { confirmed: 0, pending: 0, completed: 0 },
+          newCustomers: 0,
+          monthlyNewCustomers: 0,
+          popularTreatment: { name: 'Data tidak tersedia', count: 0 },
+          therapistTips: 0,
+          activeTherapists: 0,
+          therapistList: [],
+          recentBookings: [],
+          monthlyStats: { totalRevenue: 0, totalBookings: 0, averagePerBooking: 0, therapistFees: 0 }
+        })
       } finally {
         setLoading(false)
       }

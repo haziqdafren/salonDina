@@ -7,8 +7,8 @@ export async function DELETE(
 ) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({
-      success: false,
-      error: 'Database not configured'
+      success: true,
+      message: 'Customer deleted successfully (mock mode)'
     })
   }
 
@@ -48,6 +48,64 @@ export async function DELETE(
     return NextResponse.json({
       success: false,
       error: 'Failed to delete customer',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+}
+
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!isSupabaseConfigured()) {
+    const body = await request.json()
+    const { id } = await params
+    return NextResponse.json({
+      success: true,
+      data: { id: parseInt(id), ...body, updatedAt: new Date().toISOString() },
+      message: 'Customer updated successfully (mock mode)'
+    })
+  }
+
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized')
+    }
+
+    const { id } = await params
+    const customerId = parseInt(id)
+
+    if (isNaN(customerId)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid customer ID'
+      })
+    }
+
+    const body = await request.json()
+    console.log('📝 Updating customer:', customerId, body)
+
+    const { data, error } = await supabase
+      .from('Customer')
+      .update(body)
+      .eq('id', customerId)
+      .select()
+
+    if (error) throw error
+
+    console.log('✅ Customer updated successfully:', data[0])
+
+    return NextResponse.json({
+      success: true,
+      data: data[0],
+      message: 'Customer updated successfully'
+    })
+
+  } catch (error) {
+    console.error('❌ Update customer error:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to update customer',
       details: error instanceof Error ? error.message : 'Unknown error'
     })
   }

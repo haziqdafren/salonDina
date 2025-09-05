@@ -91,8 +91,21 @@ export default function TherapistsPage() {
     )
 
     try {
-      // TODO: Add API call to update therapist status when endpoint is available
-      console.log(`Toggle therapist ${id} status to ${!therapist.isActive}`)
+      const response = await fetch(`/api/therapists/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isActive: !therapist.isActive }),
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update therapist status')
+      }
+
+      console.log(`✅ Therapist ${id} status updated to ${!therapist.isActive}`)
     } catch (error) {
       console.error('Failed to update therapist status:', error)
       // Revert optimistic update on error
@@ -101,6 +114,7 @@ export default function TherapistsPage() {
           therapist.id === id ? { ...therapist, isActive: therapist.isActive } : therapist
         )
       )
+      alert(`❌ Gagal mengubah status therapist: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -139,7 +153,7 @@ export default function TherapistsPage() {
     setSubmitting(true)
 
     try {
-      const url = '/api/therapists'
+      const url = editingId ? `/api/therapists/${editingId}` : '/api/therapists'
       const method = editingId ? 'PUT' : 'POST'
       const submitData = {
         ...(editingId && { id: editingId }),
@@ -516,8 +530,13 @@ export default function TherapistsPage() {
                 >
                   🗑️
                 </button>
-                <button className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors">
-                  📅 Jadwal
+                <button 
+                  onClick={() => {
+                    alert(`Jadwal untuk ${therapist.fullName}:\n\nSenin - Sabtu: 09:00 - 18:00\nMinggu: 10:00 - 16:00\n\n(Fitur manajemen jadwal detail akan segera hadir)`)
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  📅 Lihat Jadwal
                 </button>
               </div>
             </motion.div>
