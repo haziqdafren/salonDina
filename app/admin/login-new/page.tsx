@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 
-export default function NewAdminLogin() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect')
+  const redirect = searchParams?.get('redirect')
   const [credentials, setCredentials] = useState({
     username: '',
     password: ''
@@ -118,12 +118,38 @@ export default function NewAdminLogin() {
           </motion.button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-2">
           <p className="text-xs text-slate-500">
             Secure access to salon management system
           </p>
+          <div>
+            <a 
+              href="/admin/test-login" 
+              className="text-xs text-blue-600 hover:text-blue-700 underline"
+            >
+              Test Login System
+            </a>
+          </div>
         </div>
       </motion.div>
     </div>
+  )
+}
+
+export default function NewAdminLogin() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
+          <div className="w-16 h-16 bg-slate-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
+            <span className="text-2xl">🔐</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800 mb-2">Loading...</h1>
+          <p className="text-slate-600">Please wait while we prepare the login page</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

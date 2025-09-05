@@ -106,9 +106,9 @@ export async function ensureAdminTable(): Promise<boolean> {
   }
 
   try {
-    // Try to query the admins table
+    // Try to query the Admin table
     const { error } = await supabase
-      .from('admins')
+      .from('Admin')
       .select('id')
       .limit(1)
 

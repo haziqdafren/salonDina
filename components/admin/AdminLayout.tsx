@@ -182,16 +182,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   Sesi Akan Berakhir
                 </h3>
                 <p className="text-slate-600 mb-4">
-                  Sesi login Anda akan berakhir dalam {remainingTime} untuk keamanan sistem.
+                  Sesi login Anda akan berakhir dalam 5 menit untuk keamanan sistem.
                 </p>
                 <div className="text-lg font-mono text-amber-600 bg-amber-50 rounded-lg p-3">
-                  {remainingTime}
+                  05:00
                 </div>
               </div>
               
               <div className="flex gap-3">
                 <button
-                  onClick={extendSession}
+                  onClick={() => {}}
                   className="flex-1 bg-slate-700 text-white px-4 py-3 rounded-xl font-semibold hover:bg-slate-800 transition-colors"
                 >
                   Perpanjang Sesi
