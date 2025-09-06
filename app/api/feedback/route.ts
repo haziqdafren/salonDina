@@ -41,19 +41,11 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Feedback GET error:', error)
-      
-      // If table doesn't exist, return in-memory store
-      if (error.code === 'PGRST204' || error.message.includes('relation "Feedback" does not exist')) {
-        console.log('🔄 Feedback table not found, returning in-memory feedbacks')
-        return NextResponse.json({
-          success: true,
-          data: MOCK_FEEDBACKS,
-          fallback: 'table_not_found',
-          message: 'Feedback table not found, returning in-memory feedbacks'
-        })
-      }
-      
-      throw error
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to fetch feedbacks',
+        details: error.message
+      })
     }
 
     return NextResponse.json({
@@ -64,10 +56,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Feedback API error:', error)
     return NextResponse.json({
-      success: true,
-      data: MOCK_FEEDBACKS,
-      fallback: 'error',
-      message: 'Using in-memory feedback due to error'
+      success: false,
+      error: 'Failed to fetch feedbacks',
+      details: error instanceof Error ? error.message : 'Unknown error'
     })
   }
 }
@@ -138,77 +129,10 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('❌ Create feedback error:', error)
-      console.error('❌ Error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      })
-      
-      // If table doesn't exist, use mock mode
-      if (error.code === 'PGRST204' || error.message.includes('relation "Feedback" does not exist')) {
-        console.log('🔄 Feedback table not found, using mock mode')
-        
-        const mockFeedback: MockFeedback = {
-          id: Date.now(),
-          ...feedbackData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-        MOCK_FEEDBACKS.unshift(mockFeedback)
-        
-        return NextResponse.json({
-          success: true,
-          data: mockFeedback,
-          fallback: 'table_not_found',
-          message: 'Feedback saved successfully (mock mode - table not found)'
-        })
-      }
-      
-      // For RLS or permission errors, try to create a simple feedback record
-      if (error.code === '42501' || error.message.includes('permission denied') || error.message.includes('RLS')) {
-        console.log('🔄 RLS error detected, attempting alternative approach...')
-        
-        // Try with minimal data to bypass RLS
-        const minimalFeedback = {
-          customerName: feedbackData.customerName,
-          customerPhone: feedbackData.customerPhone,
-          overallRating: feedbackData.overallRating,
-          comment: feedbackData.comment,
-          isAnonymous: feedbackData.isAnonymous
-        }
-        
-        const { data: minimalData, error: minimalError } = await supabase
-          .from('Feedback')
-          .insert([minimalFeedback])
-          .select()
-        
-        if (!minimalError) {
-          console.log('✅ Feedback created with minimal data:', minimalData[0])
-          return NextResponse.json({
-            success: true,
-            data: minimalData[0],
-            message: 'Feedback saved successfully'
-          })
-        }
-      }
-      
-      // If all else fails, use mock mode
-      console.log('🔄 All database attempts failed, using mock mode')
-      
-      const mockFeedback: MockFeedback = {
-        id: Date.now(),
-        ...feedbackData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      MOCK_FEEDBACKS.unshift(mockFeedback)
-      
       return NextResponse.json({
-        success: true,
-        data: mockFeedback,
-        fallback: 'error_fallback',
-        message: 'Feedback saved successfully (fallback mode)'
+        success: false,
+        error: 'Failed to create feedback',
+        details: error.message
       })
     }
 
