@@ -20,7 +20,22 @@ function LoginForm() {
     setIsLoading(true)
     setError('')
 
+    // Basic validation
+    if (!credentials.username.trim()) {
+      setError('Username harus diisi')
+      setIsLoading(false)
+      return
+    }
+    
+    if (!credentials.password.trim()) {
+      setError('Password harus diisi')
+      setIsLoading(false)
+      return
+    }
+
     try {
+      console.log('🔐 Attempting login for:', credentials.username)
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -29,18 +44,24 @@ function LoginForm() {
         body: JSON.stringify(credentials),
       })
 
+      console.log('📡 Login response status:', response.status)
       const data = await response.json()
+      console.log('📋 Login response data:', data)
 
       if (data.success) {
         console.log('✅ Login successful, redirecting...')
-        const redirectUrl = redirect || '/admin/dashboard'
-        router.replace(redirectUrl)
+        // Small delay to ensure cookie is set
+        setTimeout(() => {
+          const redirectUrl = redirect || '/admin/dashboard'
+          router.replace(redirectUrl)
+        }, 100)
       } else {
-        setError(data.message || 'Login failed')
+        console.error('❌ Login failed:', data.message)
+        setError(data.message || 'Login gagal. Periksa username dan password.')
       }
     } catch (error) {
-      console.error('Login error:', error)
-      setError('Network error occurred')
+      console.error('❌ Login error:', error)
+      setError('Terjadi kesalahan jaringan. Silakan coba lagi.')
     } finally {
       setIsLoading(false)
     }

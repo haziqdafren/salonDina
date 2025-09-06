@@ -13,10 +13,36 @@ export const isSupabaseConfigured = () => {
            url.includes('.supabase.co'))
 }
 
+// Helper to check if service role is configured
+export const isServiceRoleConfigured = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  return !!(url && serviceKey && 
+           url !== 'your-supabase-url' && 
+           serviceKey !== 'your-service-role-key' &&
+           url.startsWith('https://') &&
+           url.includes('.supabase.co'))
+}
+
 // Only create client if properly configured
 export const supabase = isSupabaseConfigured() 
   ? createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  : null
+
+// Service role client for admin operations (bypasses RLS)
+export const supabaseAdmin = isServiceRoleConfigured()
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     )
   : null
