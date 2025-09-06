@@ -65,13 +65,19 @@ export default function TherapistsPage() {
   }, [])
 
   const filteredTherapists = therapists.filter(therapist => {
-    const matchesSearch = therapist.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         therapist.initial.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    // Safety check to ensure therapist object exists and has required properties
+    if (!therapist || typeof therapist !== 'object') {
+      console.warn('Invalid therapist object found:', therapist)
+      return false
+    }
+    
+    const matchesSearch = (therapist.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (therapist.initial || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (therapist.phone && therapist.phone.includes(searchTerm))
     
     let matchesStatus = true
     if (statusFilter === 'active') {
-      matchesStatus = therapist.isActive
+      matchesStatus = Boolean(therapist.isActive)
     } else if (statusFilter === 'inactive') {
       matchesStatus = !therapist.isActive
     }
@@ -85,9 +91,13 @@ export default function TherapistsPage() {
 
     // Optimistically update UI
     setTherapists(prev =>
-      prev.map(therapist =>
-        therapist.id === id ? { ...therapist, isActive: !therapist.isActive } : therapist
-      )
+      prev.map(therapist => {
+        if (!therapist || typeof therapist !== 'object') {
+          console.warn('Invalid therapist in optimistic update:', therapist)
+          return therapist
+        }
+        return therapist.id === id ? { ...therapist, isActive: !therapist.isActive } : therapist
+      })
     )
 
     try {
@@ -152,6 +162,19 @@ export default function TherapistsPage() {
     e.preventDefault()
     setSubmitting(true)
 
+    // Form validation
+    if (!formData.initial.trim()) {
+      alert('Initial therapist harus diisi')
+      setSubmitting(false)
+      return
+    }
+    
+    if (!formData.fullName.trim()) {
+      alert('Nama lengkap harus diisi')
+      setSubmitting(false)
+      return
+    }
+
     try {
       const url = editingId ? `/api/therapists/${editingId}` : '/api/therapists'
       const method = editingId ? 'PUT' : 'POST'
@@ -159,6 +182,8 @@ export default function TherapistsPage() {
         ...(editingId && { id: editingId }),
         ...formData
       }
+
+      console.log('🔍 Submitting therapist data:', submitData)
 
       const response = await fetch(url, {
         method,
@@ -168,7 +193,9 @@ export default function TherapistsPage() {
         body: JSON.stringify(submitData),
       })
 
+      console.log('📡 Response status:', response.status)
       const result = await response.json()
+      console.log('📋 Response data:', result)
 
       if (result.success) {
         console.log(`✅ Therapist ${editingId ? 'updated' : 'created'} successfully`)
@@ -185,12 +212,14 @@ export default function TherapistsPage() {
         
         resetForm()
         setShowForm(false)
+        alert(`✅ Therapist berhasil ${editingId ? 'diperbarui' : 'ditambahkan'}`)
       } else {
-        alert(`Gagal ${editingId ? 'mengubah' : 'menambah'} therapist: ` + result.error)
+        console.error('❌ API returned error:', result.error)
+        alert(`❌ Gagal ${editingId ? 'mengubah' : 'menambah'} therapist: ${result.error}`)
       }
     } catch (error) {
       console.error(`❌ Error ${editingId ? 'updating' : 'creating'} therapist:`, error)
-      alert(`Gagal ${editingId ? 'mengubah' : 'menambah'} therapist. Silahkan coba lagi.`)
+      alert(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setSubmitting(false)
     }

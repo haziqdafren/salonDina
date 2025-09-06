@@ -129,9 +129,22 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Create therapist error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to create therapist'
+    if (error instanceof Error) {
+      if (error.message.includes('duplicate key')) {
+        errorMessage = 'Therapist dengan initial atau nama yang sama sudah ada'
+      } else if (error.message.includes('violates not-null constraint')) {
+        errorMessage = 'Data yang diperlukan tidak lengkap'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     return NextResponse.json({
       success: false,
-      error: 'Failed to create therapist',
+      error: errorMessage,
       details: error instanceof Error ? error.message : 'Unknown error'
     })
   }
@@ -193,9 +206,22 @@ export async function PUT(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Update therapist error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to update therapist'
+    if (error instanceof Error) {
+      if (error.message.includes('duplicate key')) {
+        errorMessage = 'Therapist dengan initial atau nama yang sama sudah ada'
+      } else if (error.message.includes('violates not-null constraint')) {
+        errorMessage = 'Data yang diperlukan tidak lengkap'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     return NextResponse.json({
       success: false,
-      error: 'Failed to update therapist',
+      error: errorMessage,
       details: error instanceof Error ? error.message : 'Unknown error'
     })
   }

@@ -100,7 +100,7 @@ export default function RootLayout({
     <html lang="id" className="scroll-smooth">
       <head>
         {/* Preload critical resources */}
-        <link rel="preload" href="/logo.jpeg" as="image" />
+        <link rel="preload" href="/logo.jpeg" as="image" type="image/jpeg" />
         
         <meta name="theme-color" content="#E8B4B8" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
