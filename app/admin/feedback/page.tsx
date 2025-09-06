@@ -26,13 +26,24 @@ export default function AdminFeedbackPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/feedback')
-        const json = await res.json()
+        // Try direct API first (database)
+        let res = await fetch('/api/feedback-direct')
+        let json = await res.json()
+        
+        // If direct API fails, fall back to regular API
+        if (!json.success) {
+          console.log('🔄 Direct API failed, trying regular API...')
+          res = await fetch('/api/feedback')
+          json = await res.json()
+        }
+        
         if (json.success) {
           setFeedbacks(json.data || [])
           console.log('📊 Feedback loaded:', json.data?.length || 0, 'items')
           if (json.fallback) {
             console.log('⚠️ Using fallback mode:', json.fallback)
+          } else {
+            console.log('✅ Using database mode')
           }
         }
       } catch (e) {
