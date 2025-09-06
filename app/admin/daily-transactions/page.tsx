@@ -105,61 +105,42 @@ export default function DailyTransactionsPage() {
     } catch {}
   }, [])
 
-  // Fetch dropdown data on component mount
+  // Fetch all data in one optimized call
   useEffect(() => {
-    const fetchDropdownData = async () => {
-      try {
-        // Fetch therapists
-        const therapistsResponse = await fetch('/api/therapists')
-        const therapistsResult: TherapistApiResponse = await therapistsResponse.json()
-        if (therapistsResult.success) {
-          setTherapists(therapistsResult.data.filter(t => t.isActive))
-        }
-
-        // Fetch services
-        const servicesResponse = await fetch('/api/services')
-        const servicesResult: ServiceApiResponse = await servicesResponse.json()
-        if (servicesResult.success) {
-          setServices(servicesResult.data)
-        }
-
-        // Fetch customers
-        const customersResponse = await fetch('/api/customers')
-        const customersResult: CustomerApiResponse = await customersResponse.json()
-        if (customersResult.success) {
-          setCustomers(customersResult.data)
-        }
-      } catch (error) {
-        console.error('Error fetching dropdown data:', error)
-      }
-    }
-
-    fetchDropdownData()
-  }, [])
-
-  // Fetch daily transactions
-  useEffect(() => {
-    const fetchTransactions = async () => {
+    const fetchAllData = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`/api/daily-treatments?date=${selectedDate}`)
-        const result: ApiResponse = await response.json()
+        console.log('🚀 Fetching combined daily transactions data for:', selectedDate)
+        
+        const response = await fetch(`/api/daily-transactions-data?date=${selectedDate}`)
+        const result = await response.json()
         
         if (result.success) {
-          setTransactions(result.data || [])
-          console.log('📊 Daily transactions fetched:', result.data?.length || 0)
+          const { transactions, therapists, services, customers } = result.data
+          
+          setTransactions(transactions || [])
+          setTherapists(therapists || [])
+          setServices(services || [])
+          setCustomers(customers || [])
+          
+          console.log('✅ All data fetched successfully:', {
+            transactions: transactions?.length || 0,
+            therapists: therapists?.length || 0,
+            services: services?.length || 0,
+            customers: customers?.length || 0
+          })
         } else {
-          setError('Failed to fetch daily transactions')
+          setError('Failed to fetch data')
         }
       } catch (err) {
-        console.error('Error fetching daily transactions:', err)
-        setError('Network error while fetching transactions')
+        console.error('Error fetching data:', err)
+        setError('Network error while fetching data')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchTransactions()
+    fetchAllData()
   }, [selectedDate])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

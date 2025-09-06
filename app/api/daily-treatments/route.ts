@@ -360,17 +360,28 @@ export async function POST(request: NextRequest) {
       const d = new Date(dateOnly)
       const month = d.getUTCMonth() + 1
       const year = d.getUTCFullYear()
-      // Recompute sums for that month
+      // Recompute sums for that month with actual therapist fees
       const { data: monthRows } = await supabase
         .from('DailyTreatment')
-        .select('price, isFreeVisit, date')
+        .select(`
+          price, 
+          isFreeVisit, 
+          date,
+          Service:serviceId(therapistFee)
+        `)
         .gte('date', new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)).toISOString())
         .lte('date', new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString())
 
       const paidRevenue = (monthRows || []).reduce((sum, r: any) => r.isFreeVisit ? sum : sum + Number(r.price || 0), 0)
       const totalTreatments = (monthRows || []).length
       const freeTreatments = (monthRows || []).filter((r: any) => r.isFreeVisit).length
-      const totalTherapistFees = Math.round(paidRevenue * 0.4)
+      
+      // Calculate actual therapist fees from service data
+      const totalTherapistFees = (monthRows || []).reduce((sum, r: any) => {
+        if (r.isFreeVisit) return sum
+        const serviceFee = Number((r.Service as any)?.therapistFee || 0)
+        return sum + serviceFee
+      }, 0)
 
       // Try update then insert if missing
       const { data: existing } = await supabase
@@ -524,14 +535,25 @@ export async function PUT(request: NextRequest) {
       const year = d.getUTCFullYear()
       const { data: monthRows } = await supabase
         .from('DailyTreatment')
-        .select('price, isFreeVisit, date')
+        .select(`
+          price, 
+          isFreeVisit, 
+          date,
+          Service:serviceId(therapistFee)
+        `)
         .gte('date', new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)).toISOString())
         .lte('date', new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString())
 
       const paidRevenue = (monthRows || []).reduce((sum, r: any) => r.isFreeVisit ? sum : sum + Number(r.price || 0), 0)
       const totalTreatments = (monthRows || []).length
       const freeTreatments = (monthRows || []).filter((r: any) => r.isFreeVisit).length
-      const totalTherapistFees = Math.round(paidRevenue * 0.4)
+      
+      // Calculate actual therapist fees from service data
+      const totalTherapistFees = (monthRows || []).reduce((sum, r: any) => {
+        if (r.isFreeVisit) return sum
+        const serviceFee = Number((r.Service as any)?.therapistFee || 0)
+        return sum + serviceFee
+      }, 0)
 
       const { data: existing } = await supabase
         .from('MonthlyBookkeeping')
