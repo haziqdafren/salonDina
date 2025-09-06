@@ -112,22 +112,35 @@ export default function DailyTransactionsPage() {
         setLoading(true)
         console.log('🚀 Fetching combined daily transactions data for:', selectedDate)
         
-        const response = await fetch(`/api/daily-transactions-data?date=${selectedDate}`)
+        const response = await fetch(`/api/daily-treatments?date=${selectedDate}`)
         const result = await response.json()
         
         if (result.success) {
-          const { transactions, therapists, services, customers } = result.data
+          const transactions = result.data || []
           
-          setTransactions(transactions || [])
-          setTherapists(therapists || [])
-          setServices(services || [])
-          setCustomers(customers || [])
+          // Fetch additional data in parallel
+          const [therapistsRes, servicesRes, customersRes] = await Promise.all([
+            fetch('/api/therapists'),
+            fetch('/api/services'),
+            fetch('/api/customers')
+          ])
+          
+          const [therapistsData, servicesData, customersData] = await Promise.all([
+            therapistsRes.json(),
+            servicesRes.json(),
+            customersRes.json()
+          ])
+          
+          setTransactions(transactions)
+          setTherapists(therapistsData.data || [])
+          setServices(servicesData.data || [])
+          setCustomers(customersData.data || [])
           
           console.log('✅ All data fetched successfully:', {
             transactions: transactions?.length || 0,
-            therapists: therapists?.length || 0,
-            services: services?.length || 0,
-            customers: customers?.length || 0
+            therapists: therapistsData.data?.length || 0,
+            services: servicesData.data?.length || 0,
+            customers: customersData.data?.length || 0
           })
         } else {
           setError('Failed to fetch data')
