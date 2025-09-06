@@ -46,27 +46,11 @@ export default function FeedbackDisplay() {
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 6)
 
-          // If API returns empty, try localStorage fallback (from admin form submissions)
-          if (publicFeedbacks.length === 0) {
-            const cached = typeof window !== 'undefined' ? localStorage.getItem('publicFeedbacks') : null
-            if (cached) {
-              const cachedList: Feedback[] = JSON.parse(cached)
-              setFeedbacks(cachedList.slice(0, 6))
-              return
-            }
-          }
-
           setFeedbacks(publicFeedbacks)
+          console.log('✅ Using database feedbacks:', publicFeedbacks.length)
         }
       } catch (error) {
-        console.error('Failed to fetch feedbacks:', error)
-        // Fallback to localStorage on network error
-        const cached = typeof window !== 'undefined' ? localStorage.getItem('publicFeedbacks') : null
-        if (cached) {
-          const cachedList: Feedback[] = JSON.parse(cached)
-          setFeedbacks(cachedList.slice(0, 6))
-          return
-        }
+        console.error('❌ Failed to fetch feedbacks from database:', error)
       } finally {
         setLoading(false)
       }
