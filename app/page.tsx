@@ -8,13 +8,11 @@ import BookingSystem from '../components/customer/BookingSystem'
 // import PrayerTimeWidget from '../components/customer/PrayerTimeWidget' // Removed - unnecessary
 import WhatsAppFloat from '../components/customer/WhatsAppFloat'
 import CustomerNavbar from '../components/customer/CustomerNavbar'
-import DatabaseNotConnected from '../components/DatabaseNotConnected'
 import dynamic from 'next/dynamic'
 const FeedbackDisplay = dynamic(() => import('../components/customer/FeedbackDisplay'), { ssr: false })
 
 export default function Homepage() {
   const [clickCount, setClickCount] = useState(0)
-  const [databaseAvailable, setDatabaseAvailable] = useState<boolean | null>(null)
   const [homepageSettings, setHomepageSettings] = useState({
     hero: {
       salonName: 'Salon Muslimah Dina',
@@ -24,8 +22,8 @@ export default function Homepage() {
     },
     contact: {
       address: 'Jl. Perhubungan, Tembung\nPercut Sei Tuan, Kabupaten Deli Serdang\nSumatera Utara 20371\n📍 Dekat SPBU Lau Dendang',
-      phone: '+62 821-7067-7736',
-      whatsapp: '+6282170677736',
+      phone: '+62 831-4109-5591',
+      whatsapp: '+6283141095591',
       email: 'medan@salonmuslimah.com',
       instagram: '@dina_salon_muslimah',
       operatingHours: {
@@ -47,20 +45,6 @@ export default function Homepage() {
   const router = useRouter()
   const whatsappNumber = homepageSettings.contact.whatsapp
 
-  // Check database availability
-  useEffect(() => {
-    const checkDatabase = async () => {
-      try {
-        const response = await fetch('/api/health')
-        const data = await response.json()
-        setDatabaseAvailable(data.database === 'connected')
-      } catch (error) {
-        console.log('Database check failed, but attempting to load data anyway:', error)
-        // Don't immediately set to false - let the homepage settings load attempt determine connectivity
-      }
-    }
-    checkDatabase()
-  }, [])
 
   // Load homepage settings after component mounts (client-side only)
   useEffect(() => {
@@ -76,21 +60,13 @@ export default function Homepage() {
             console.log('🏠 Homepage settings loaded:', result.data)
           }
         }
-        // If homepage settings loaded successfully or endpoint doesn't exist, database is connected
-        if (databaseAvailable === null) {
-          setDatabaseAvailable(true)
-        }
       } catch (error) {
         console.log('Homepage settings not available, using defaults:', error)
-        // If this fails, still consider database connected since we have fallback data
-        if (databaseAvailable === null) {
-          setDatabaseAvailable(true)
-        }
       }
     }
     // Small delay to ensure smooth loading experience
     setTimeout(loadHomepageSettings, 100)
-  }, [databaseAvailable])
+  }, [])
   const whatsappMessage = "Assalamu'alaikum, saya ingin booking dan bertanya tentang layanan Salon Muslimah Dina di Medan. Apakah masih ada slot hari ini?"
 
   // Logo click handler for admin access
@@ -123,22 +99,6 @@ export default function Homepage() {
     window.open(`https://instagram.com/${instagramHandle}`, '_blank')
   }
 
-  // Show database connection screen only if explicitly determined to be disconnected
-  if (databaseAvailable === false) {
-    return <DatabaseNotConnected />
-  }
-  
-  // Show loading while checking database connection
-  if (databaseAvailable === null) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-300 border-t-slate-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Memuat halaman salon...</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen ornamental-background salon-gradient-bg salon-pattern">

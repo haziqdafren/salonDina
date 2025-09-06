@@ -58,8 +58,8 @@ export default function SettingsPage() {
     },
     contact: {
       address: 'Jl. Perhubungan, Tembung\nPercut Sei Tuan, Kabupaten Deli Serdang\nSumatera Utara 20371\n📍 Dekat SPBU Lau Dendang',
-      phone: '+62 821-7067-7736',
-      whatsapp: '+6282170677736',
+      phone: '+62 831-4109-5591',
+      whatsapp: '+6283141095591',
       email: 'medan@salonmuslimah.com',
       instagram: '@dina_salon_muslimah',
       operatingHours: {
@@ -529,7 +529,7 @@ export default function SettingsPage() {
                     value={settings.contact.phone}
                     onChange={(e) => updateContactSetting('phone', e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                    placeholder="+62 821-7067-7736"
+                    placeholder="+62 831-4109-5591"
                   />
                 </div>
 
