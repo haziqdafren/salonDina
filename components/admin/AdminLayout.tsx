@@ -90,13 +90,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: '💬',
       href: '/admin/feedback',
       description: 'Kelola testimoni dan rating pelanggan',
-    },
-    {
-      id: 'settings',
-      title: 'Pengaturan Sistem',
-      icon: '⚙️',
-      href: '/admin/settings',
-      description: 'Konfigurasi aplikasi dan sistem',
     }
   ]
 

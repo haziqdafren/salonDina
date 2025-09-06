@@ -1,31 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, supabaseAdmin, isSupabaseConfigured, isServiceRoleConfigured } from '../../../lib/supabase'
-
-// In-memory feedback store to support fallback mode
-type MockFeedback = {
-  id: number
-  treatmentId: number
-  customerName: string
-  customerPhone: string
-  serviceName: string
-  therapistName: string
-  therapistRating: number
-  serviceRating: number
-  overallRating: number
-  comment: string
-  isAnonymous: boolean
-  createdAt: string
-  updatedAt: string
-}
-const MOCK_FEEDBACKS: MockFeedback[] = []
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase'
 
 export async function GET(request: NextRequest) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({
-      success: true,
-      data: MOCK_FEEDBACKS,
-      fallback: 'no_supabase',
-      message: 'Using in-memory feedback - Supabase not configured'
+      success: false,
+      error: 'Database not configured'
     })
   }
 
@@ -64,30 +44,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  // Read body once and reuse everywhere to avoid "Body already read" errors
-  const body = await request.json()
-
   if (!isSupabaseConfigured()) {
-    const mockFeedback: MockFeedback = {
-      id: Date.now(),
-      treatmentId: body.treatmentId,
-      customerName: body.customerName,
-      customerPhone: body.customerPhone,
-      serviceName: body.serviceName || '',
-      therapistName: body.therapistName || '',
-      therapistRating: Number(body.therapistRating) || 0,
-      serviceRating: Number(body.serviceRating) || 0,
-      overallRating: Number(body.overallRating) || 0,
-      comment: body.comment || '',
-      isAnonymous: body.isAnonymous || false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-    MOCK_FEEDBACKS.unshift(mockFeedback)
     return NextResponse.json({
-      success: true,
-      data: mockFeedback,
-      message: 'Feedback saved successfully (mock mode)'
+      success: false,
+      error: 'Database not configured'
     })
   }
 
@@ -95,6 +55,8 @@ export async function POST(request: NextRequest) {
     if (!supabase) {
       throw new Error('Supabase client not initialized')
     }
+
+    const body = await request.json()
 
     console.log('📝 Creating feedback:', body)
 

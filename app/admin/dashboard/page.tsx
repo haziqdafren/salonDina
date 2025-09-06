@@ -69,7 +69,7 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/dashboard-optimized')
+        const response = await fetch('/api/dashboard')
         if (response.ok) {
           const result = await response.json()
           if (result.success) {

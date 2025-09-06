@@ -46,27 +46,6 @@ export default function Homepage() {
   const whatsappNumber = homepageSettings.contact.whatsapp
 
 
-  // Load homepage settings after component mounts (client-side only)
-  useEffect(() => {
-    const loadHomepageSettings = async () => {
-      try {
-        // Try to fetch homepage settings, but don't fail if it doesn't exist
-        const response = await fetch('/api/homepage-settings')
-        if (response.ok) {
-          const result = await response.json()
-          
-          if (result.success && result.data) {
-            setHomepageSettings(result.data)
-            console.log('🏠 Homepage settings loaded:', result.data)
-          }
-        }
-      } catch (error) {
-        console.log('Homepage settings not available, using defaults:', error)
-      }
-    }
-    // Small delay to ensure smooth loading experience
-    setTimeout(loadHomepageSettings, 100)
-  }, [])
   const whatsappMessage = "Assalamu'alaikum, saya ingin booking dan bertanya tentang layanan Salon Muslimah Dina di Medan. Apakah masih ada slot hari ini?"
 
   // Logo click handler for admin access
