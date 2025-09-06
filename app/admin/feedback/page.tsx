@@ -28,9 +28,15 @@ export default function AdminFeedbackPage() {
       try {
         const res = await fetch('/api/feedback')
         const json = await res.json()
-        if (json.success) setFeedbacks(json.data || [])
+        if (json.success) {
+          setFeedbacks(json.data || [])
+          console.log('📊 Feedback loaded:', json.data?.length || 0, 'items')
+          if (json.fallback) {
+            console.log('⚠️ Using fallback mode:', json.fallback)
+          }
+        }
       } catch (e) {
-        // noop
+        console.error('Error loading feedback:', e)
       } finally {
         setLoading(false)
       }
@@ -59,6 +65,12 @@ export default function AdminFeedbackPage() {
             <h1 className="text-3xl font-bold text-pink-800 mb-2">Manajemen Feedback</h1>
             <p className="text-gray-600">Lihat dan kelola feedback pelanggan</p>
           </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+          >
+            🔄 Refresh
+          </button>
           <div className="flex gap-2">
             <input
               value={query}
