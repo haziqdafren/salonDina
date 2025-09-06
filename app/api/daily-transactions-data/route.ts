@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
-    console.log('🚀 Fetching combined daily transactions data for:', date)
+    console.log('🚀 Fetching combined daily transactions data for:', date, '- v2')
 
     // Fetch all data in parallel for better performance
     const [transactionsResult, therapistsResult, servicesResult, customersResult] = await Promise.all([
